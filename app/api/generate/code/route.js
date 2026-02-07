@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import openai from '@/lib/openai';
+import openai from '../../../../lib/openai';
 
-// Prevent Vercel from caching the AI response
+// Force dynamic so it doesn't cache the AI response
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
@@ -14,6 +14,7 @@ export async function POST(req) {
 
     console.log("Generating code for:", prompt);
 
+    // The Master System Prompt
     const systemPrompt = `
     You are an Expert Android Developer (Kotlin/XML).
     Your task is to generate a fully functional Android App based on the user's request.
@@ -24,12 +25,12 @@ export async function POST(req) {
     3. You MUST include these exact files:
        - app/src/main/AndroidManifest.xml
        - app/build.gradle
-       - app/src/main/res/layout/activity_main.xml
-       - app/src/main/java/com/example/genapp/MainActivity.kt
+       - app/src/main/res/layout/activity_main.xml (The UI)
+       - app/src/main/java/com/example/genapp/MainActivity.kt (The Logic)
        - app/src/main/res/values/strings.xml
-       - .github/workflows/android.yml
+       - .github/workflows/android.yml (The Build Blueprint)
     
-    For 'android.yml', use this exact content:
+    For the 'android.yml' file, use this content exactly:
     name: Android Build
     on: [push]
     jobs:
@@ -54,16 +55,17 @@ export async function POST(req) {
         { role: "user", content: `Create an android app that: ${prompt}` },
       ],
       temperature: 0.7,
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" } 
     });
 
+    // Parse the response
     const rawContent = completion.choices[0].message.content;
     const projectFiles = JSON.parse(rawContent);
 
-    // Normalize output (sometimes AI wraps it in { files: [...] })
-    const filesArray = projectFiles.files || projectFiles;
-
-    return NextResponse.json({ success: true, files: filesArray });
+    return NextResponse.json({ 
+      success: true, 
+      files: projectFiles.files || projectFiles 
+    });
 
   } catch (error) {
     console.error("AI Generation Error:", error);
