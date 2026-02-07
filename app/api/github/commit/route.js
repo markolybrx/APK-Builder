@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
-import { GitHubService } from '@/lib/github-service';
+import { GitHubService } from '../../../../lib/github-service';
 
 export async function POST(req) {
   try {
+    // repoName should be "username/project-name"
     const { repoName, files, message } = await req.json();
 
     if (!repoName || !files) {
       return NextResponse.json({ error: 'Missing repo name or files' }, { status: 400 });
     }
 
-    // repoName is "username/project"
+    // Split "username/project-name"
     const [owner, repo] = repoName.split('/');
 
     await GitHubService.uploadFiles(owner, repo, files, message || "AI Initial Commit");
