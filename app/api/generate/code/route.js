@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Allow this API to run for up to 60 seconds (Vercel Pro)
+// CRITICAL: This allows the AI to run for up to 60 seconds (Vercel Pro/Hobby limits)
 export const maxDuration = 60; 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +23,7 @@ export async function POST(req) {
 
     console.log("Generating code with Gemini for:", prompt);
 
-    // 3. Define the System Prompt (The Expert Persona)
+    // 3. Define the System Prompt
     const systemInstruction = `
     You are an Expert Android Developer (Kotlin/XML).
     Your task is to generate a fully functional Android App based on the user's request.
@@ -69,7 +69,7 @@ export async function POST(req) {
       systemInstruction: systemInstruction,
       generationConfig: {
         temperature: 0.7,
-        responseMimeType: "application/json", // Forces Gemini to output pure JSON
+        responseMimeType: "application/json",
       },
     });
 
