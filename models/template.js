@@ -4,18 +4,17 @@ const TemplateSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   
-  // The "Recipe" for the AI
-  prompt: { type: String, required: true },
+  // The "Recipe"
+  prompt: { type: String, required: true }, // The prompt used to generate this
   
   // Visuals
   iconUrl: { type: String },
-  previewImages: [{ type: String }],
   
-  // Usage stats
-  clones: { type: Number, default: 0 },
-  authorName: { type: String }, // e.g. "Community" or "User123"
-  
+  // Metadata
+  authorName: { type: String },
+  clones: { type: Number, default: 0 }, // How many people used this?
   isPublic: { type: Boolean, default: true },
+  
   createdAt: { type: Date, default: Date.now }
 });
 
