@@ -16,8 +16,8 @@ const nextConfig = {
       },
     ],
   },
-  // Increase timeout for API routes since AI takes time
-  maxDuration: 60, 
+  // We removed 'maxDuration' from here because it causes the crash.
+  // It must be added to the individual API route files instead.
 };
 
 export default nextConfig;
