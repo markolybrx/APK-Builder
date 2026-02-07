@@ -1,27 +1,35 @@
 import { NextResponse } from 'next/server';
-import openai from '../../../../lib/openai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// CRITICAL: This allows the AI to run for up to 60 seconds before timing out
+// Allow this API to run for up to 60 seconds (Vercel Pro)
 export const maxDuration = 60; 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
   try {
-    const { prompt } = await req.json();
+    // 1. Initialize Gemini
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'GEMINI_API_KEY is missing' }, { status: 500 });
+    }
 
+    const genAI = new GoogleGenerativeAI(apiKey);
+    
+    // 2. Get User Prompt
+    const { prompt } = await req.json();
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
-    console.log("Generating code for:", prompt);
+    console.log("Generating code with Gemini for:", prompt);
 
-    // The Master System Prompt
-    const systemPrompt = `
+    // 3. Define the System Prompt (The Expert Persona)
+    const systemInstruction = `
     You are an Expert Android Developer (Kotlin/XML).
     Your task is to generate a fully functional Android App based on the user's request.
     
     CRITICAL OUTPUT RULES:
-    1. Output ONLY valid JSON. No markdown, no explanations.
+    1. Output ONLY valid JSON. No markdown (no \`\`\`json), no explanations.
     2. The JSON structure MUST be exactly this:
        {
          "files": [
@@ -31,7 +39,7 @@ export async function POST(req) {
        }
     3. You MUST include these exact files:
        - app/src/main/AndroidManifest.xml
-       - app/build.gradle
+       - app/build.gradle (Module level)
        - app/src/main/res/layout/activity_main.xml (The UI)
        - app/src/main/java/com/example/genapp/MainActivity.kt (The Logic)
        - app/src/main/res/values/strings.xml
@@ -55,28 +63,30 @@ export async function POST(req) {
           with: { name: app-debug, path: app/build/outputs/apk/debug/app-debug.apk }
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o", // You can switch to "gpt-3.5-turbo" if you get timeouts
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Create an android app that: ${prompt}` },
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" } 
+    // 4. Configure the Model
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: systemInstruction,
+      generationConfig: {
+        temperature: 0.7,
+        responseMimeType: "application/json", // Forces Gemini to output pure JSON
+      },
     });
 
-    // Parse the response
-    const rawContent = completion.choices[0].message.content;
+    // 5. Generate Content
+    const result = await model.generateContent(`Create an android app that: ${prompt}`);
+    const responseText = result.response.text();
+
+    // 6. Parse and Validate
     let projectFiles;
-    
     try {
-        projectFiles = JSON.parse(rawContent);
+        projectFiles = JSON.parse(responseText);
     } catch (e) {
-        console.error("Failed to parse AI JSON:", rawContent);
+        console.error("Failed to parse Gemini JSON:", responseText);
         throw new Error("AI returned invalid JSON");
     }
 
-    // Ensure we handle both structure types just in case
+    // Handle "files" array structure
     const filesArray = projectFiles.files || projectFiles;
 
     return NextResponse.json({ 
