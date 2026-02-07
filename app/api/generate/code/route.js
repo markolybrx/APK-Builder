@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import openai from '../../../../lib/openai';
 
-// Force dynamic so it doesn't cache the AI response
+// CRITICAL: This allows the AI to run for up to 60 seconds before timing out
+export const maxDuration = 60; 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
@@ -21,7 +22,13 @@ export async function POST(req) {
     
     CRITICAL OUTPUT RULES:
     1. Output ONLY valid JSON. No markdown, no explanations.
-    2. The JSON must be an ARRAY of file objects: [{ "path": "app/...", "content": "..." }]
+    2. The JSON structure MUST be exactly this:
+       {
+         "files": [
+            { "path": "app/src/main/AndroidManifest.xml", "content": "..." },
+            { "path": "app/build.gradle", "content": "..." }
+         ]
+       }
     3. You MUST include these exact files:
        - app/src/main/AndroidManifest.xml
        - app/build.gradle
@@ -49,7 +56,7 @@ export async function POST(req) {
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o", 
+      model: "gpt-4o", // You can switch to "gpt-3.5-turbo" if you get timeouts
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Create an android app that: ${prompt}` },
@@ -60,15 +67,25 @@ export async function POST(req) {
 
     // Parse the response
     const rawContent = completion.choices[0].message.content;
-    const projectFiles = JSON.parse(rawContent);
+    let projectFiles;
+    
+    try {
+        projectFiles = JSON.parse(rawContent);
+    } catch (e) {
+        console.error("Failed to parse AI JSON:", rawContent);
+        throw new Error("AI returned invalid JSON");
+    }
+
+    // Ensure we handle both structure types just in case
+    const filesArray = projectFiles.files || projectFiles;
 
     return NextResponse.json({ 
       success: true, 
-      files: projectFiles.files || projectFiles 
+      files: filesArray 
     });
 
   } catch (error) {
     console.error("AI Generation Error:", error);
-    return NextResponse.json({ error: 'Failed to generate code' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to generate code: ' + error.message }, { status: 500 });
   }
 }
