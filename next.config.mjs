@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 1. Force the output folder to be what Netlify expects
+  distDir: '.next',
+  
   images: {
+    // 2. Disable default optimization (fixes broken images on Netlify)
+    unoptimized: true, 
     remotePatterns: [
       {
         protocol: 'https',
@@ -8,16 +13,14 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'oaidalleapiprodscus.blob.core.windows.net', // For DALL-E images
+        hostname: 'oaidalleapiprodscus.blob.core.windows.net',
       },
       {
         protocol: 'https',
-        hostname: 'raw.githubusercontent.com', // For viewing raw code/images from repos
+        hostname: 'raw.githubusercontent.com',
       },
     ],
   },
-  // We removed 'maxDuration' from here because it causes the crash.
-  // It must be added to the individual API route files instead.
 };
 
 export default nextConfig;
