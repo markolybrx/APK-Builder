@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { Plus, Search, Terminal, Smartphone, Calendar, Package } from 'lucide-react';
