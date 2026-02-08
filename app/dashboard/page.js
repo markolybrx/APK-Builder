@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import { getServerSession } from "next-auth";
-// Import from the file we just fixed above
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 import { clientPromise } from "@/lib/db"; 
 import { redirect } from "next/navigation";
@@ -13,24 +12,32 @@ async function getProjects(userId) {
     const client = await clientPromise;
     const db = client.db();
     
-    // Safely find projects
+    // Fetch projects
     const projects = await db.collection("projects")
       .find({ userId: userId })
       .sort({ updatedAt: -1 })
       .toArray();
 
-    // Serialize data to prevent React hydration errors
-    return projects.map(p => ({
-      ...p,
-      _id: p._id.toString(),
-      userId: p.userId.toString(),
-      createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : null,
-      updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : null,
-    }));
+    // SAFE MAPPING: This prevents crashes if data is missing
+    return projects.map(p => {
+      let safeDate = "Recent";
+      try {
+        if (p.updatedAt) safeDate = new Date(p.updatedAt).toLocaleDateString();
+      } catch (e) { /* Ignore bad dates */ }
+
+      return {
+        ...p,
+        _id: p._id.toString(),
+        userId: p.userId.toString(),
+        name: p.name || "Untitled App",
+        description: p.description || "",
+        packageName: p.packageName || "com.app.draft",
+        dateDisplay: safeDate, // Use this pre-calculated string
+      };
+    });
 
   } catch (error) {
     console.error("Database Error:", error);
-    // Return empty array instead of crashing
     return [];
   }
 }
@@ -76,8 +83,11 @@ export default async function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {projects.map((project) => (
               <Link key={project._id} href={`/dashboard/${project._id}`} className="block p-6 bg-matte-800 border border-matte-border rounded-2xl hover:border-neon-blue/50 transition-colors">
-                <h3 className="text-xl font-bold text-white mb-2">{project.name}</h3>
-                <p className="text-slate-400 text-sm">{project.description}</p>
+                <div className="flex justify-between items-start mb-4">
+                   <h3 className="text-xl font-bold text-white truncate">{project.name}</h3>
+                   <span className="text-xs text-slate-500 bg-matte-900 px-2 py-1 rounded">{project.dateDisplay}</span>
+                </div>
+                <p className="text-slate-400 text-sm line-clamp-2">{project.description}</p>
               </Link>
             ))}
           </div>
