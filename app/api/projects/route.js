@@ -1,43 +1,47 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-// FIX: Use absolute path '@/' to avoid relative path errors
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { clientPromise } from "@/lib/db";
 
 export async function POST(req) {
   try {
+    console.log("1. Starting Project Creation..."); // Debug Log
+    
     // 1. Verify User
     const session = await getServerSession(authOptions);
     if (!session) {
-      console.error("API Error: No session found");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.log("Error: No Session");
+      return NextResponse.json({ error: "Unauthorized: Please log in again." }, { status: 401 });
     }
 
     // 2. Get Data
-    const { name, description } = await req.json();
+    const body = await req.json();
+    console.log("2. Received Body:", body);
+    const { name, description } = body;
 
     if (!name) {
       return NextResponse.json({ error: "App name is required" }, { status: 400 });
     }
 
     // 3. Connect to DB
+    console.log("3. Connecting to MongoDB...");
     const client = await clientPromise;
     const db = client.db();
+    console.log("4. Connected.");
 
     // 4. Create Project
     const newProject = {
       userId: session.user.id,
       name: name,
       description: description || "",
-      createdAt: new Date(),
+      createdAt: new Date(), // Stored as Date object
       updatedAt: new Date(),
       buildStatus: "draft",
-      githubRepo: null, 
-      githubUrl: null,
       files: [] 
     };
 
     const result = await db.collection("projects").insertOne(newProject);
+    console.log("5. Inserted:", result.insertedId);
 
     return NextResponse.json({ 
       success: true, 
@@ -45,29 +49,15 @@ export async function POST(req) {
     });
 
   } catch (error) {
-    // FIX: Log the actual error to Vercel logs
-    console.error("Project creation CRITICAL error:", error);
-    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+    console.error("CRITICAL API ERROR:", error);
+    return NextResponse.json({ 
+      error: "Server Error", 
+      details: error.message 
+    }, { status: 500 });
   }
 }
 
-// GET Route
+// Simple GET for safety
 export async function GET(req) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const client = await clientPromise;
-    const db = client.db();
-    
-    const projects = await db.collection("projects")
-      .find({ userId: session.user.id })
-      .sort({ updatedAt: -1 })
-      .toArray();
-
-    return NextResponse.json({ projects });
-  } catch (error) {
-    console.error("Fetch projects error:", error);
-    return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
-  }
+    return NextResponse.json({ message: "API is working" });
 }
