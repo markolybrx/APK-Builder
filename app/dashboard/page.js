@@ -5,36 +5,31 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 import { clientPromise } from "@/lib/db"; 
 import { redirect } from "next/navigation";
-import { Plus, Search, Terminal, Smartphone, Calendar, Package } from 'lucide-react';
+import { Plus, Search, Smartphone, Calendar, Package } from 'lucide-react';
 
 async function getProjects(userId) {
   try {
     const client = await clientPromise;
     const db = client.db();
     
-    // Fetch projects
     const projects = await db.collection("projects")
       .find({ userId: userId })
       .sort({ updatedAt: -1 })
       .toArray();
 
-    // SAFE MAPPING: This prevents crashes if data is missing
-    return projects.map(p => {
-      let safeDate = "Recent";
-      try {
-        if (p.updatedAt) safeDate = new Date(p.updatedAt).toLocaleDateString();
-      } catch (e) { /* Ignore bad dates */ }
+    // SANITIZATION: Convert EVERYTHING to pure JSON strings to prevent crashes
+    const safeProjects = projects.map(p => ({
+      _id: p._id.toString(),
+      userId: p.userId.toString(),
+      name: p.name || "Untitled",
+      description: p.description || "",
+      packageName: p.packageName || "com.app.draft",
+      buildStatus: p.buildStatus || "draft",
+      // Convert dates safely
+      updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
+    }));
 
-      return {
-        ...p,
-        _id: p._id.toString(),
-        userId: p.userId.toString(),
-        name: p.name || "Untitled App",
-        description: p.description || "",
-        packageName: p.packageName || "com.app.draft",
-        dateDisplay: safeDate, // Use this pre-calculated string
-      };
-    });
+    return JSON.parse(JSON.stringify(safeProjects));
 
   } catch (error) {
     console.error("Database Error:", error);
@@ -85,7 +80,10 @@ export default async function Dashboard() {
               <Link key={project._id} href={`/dashboard/${project._id}`} className="block p-6 bg-matte-800 border border-matte-border rounded-2xl hover:border-neon-blue/50 transition-colors">
                 <div className="flex justify-between items-start mb-4">
                    <h3 className="text-xl font-bold text-white truncate">{project.name}</h3>
-                   <span className="text-xs text-slate-500 bg-matte-900 px-2 py-1 rounded">{project.dateDisplay}</span>
+                   {/* Date Display */}
+                   <span className="text-xs text-slate-500 bg-matte-900 px-2 py-1 rounded">
+                     {new Date(project.updatedAt).toLocaleDateString()}
+                   </span>
                 </div>
                 <p className="text-slate-400 text-sm line-clamp-2">{project.description}</p>
               </Link>
