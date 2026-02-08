@@ -1,34 +1,51 @@
-import Link from 'next/link';
+"use client";
+import Link from "next/link";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 export default function Navbar() {
+  const { data: session } = useSession();
+
   return (
-    <nav className="fixed top-0 w-full z-50 border-b border-white/10 bg-slate-900/60 backdrop-blur-md">
+    <nav className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          
           {/* Logo */}
-          <div className="flex-shrink-0">
-            <Link href="/" className="font-bold text-2xl tracking-tighter text-white flex items-center gap-2">
-              <span className="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center text-sm">AI</span>
-              AppGen
+          <div className="flex items-center">
+            <Link href="/" className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+              AppBuild AI
             </Link>
           </div>
 
-          {/* Navigation Links */}
+          {/* Desktop Menu */}
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-6">
-              <Link href="/dashboard" className="text-slate-300 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">
-                Dashboard
+            <div className="ml-10 flex items-baseline space-x-4">
+              <Link href="#features" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                How it Works
               </Link>
-              <Link href="/dashboard/create" className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white px-5 py-2 rounded-full text-sm font-bold shadow-lg shadow-blue-500/20 transition-all hover:scale-105">
-                + New App
+              <Link href="#pricing" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Pricing
               </Link>
+              {session ? (
+                <>
+                  <Link href="/dashboard" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => signOut()}
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => signIn("google")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Get Started
+                </button>
+              )}
             </div>
-          </div>
-          
-          {/* Mobile Menu Icon (Simple version) */}
-          <div className="md:hidden">
-            <Link href="/dashboard/create" className="text-blue-400 font-bold">New App</Link>
           </div>
         </div>
       </div>
