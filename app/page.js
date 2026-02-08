@@ -57,8 +57,9 @@ export default function Home() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row gap-4 mt-8 w-full justify-center"
         >
+          {/* UPDATED LINK: Goes to /login instead of /dashboard */}
           <Link 
-            href="/dashboard" 
+            href="/login" 
             className="group flex items-center justify-center gap-2 px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:scale-105"
           >
             Start Building Free
