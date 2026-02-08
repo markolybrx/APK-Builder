@@ -4,18 +4,14 @@ import GoogleProvider from "next-auth/providers/google";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import { clientPromise } from "@/lib/db";
 
+// 1. EXPORT authOptions so other API routes can use it
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID,
       clientSecret: process.env.GITHUB_SECRET,
-      authorization: {
-        params: {
-          // CRITICAL: 'repo' scope gives full read/write access to user's private repos
-          scope: "repo read:user user:email",
-        },
-      },
+      authorization: { params: { scope: "repo read:user user:email" } },
     }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -30,21 +26,17 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    // This adds the user ID to the session object so we can identify them in the API
-    async session({ session, token, user }) {
-      session.user.id = user?.id || token?.sub;
+    async session({ session, user, token }) {
+      if (session?.user) {
+        session.user.id = user?.id || token?.sub;
+      }
       return session;
     },
   },
-  session: {
-    strategy: "jwt", // Use JWT for easier session management on Vercel
-  },
+  session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: '/login', // Redirect here if unauthorized
-  },
+  pages: { signIn: '/login' },
 };
 
 const handler = NextAuth(authOptions);
-
 export { handler as GET, handler as POST };
