@@ -1,185 +1,113 @@
 "use client";
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
-export default function ChatBuilder() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Smartphone, Sparkles, Loader2 } from "lucide-react";
+import Link from "next/link";
+
+export default function CreateProject() {
   const router = useRouter();
-  const messagesEndRef = useRef(null);
-  
-  // State
-  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Hi! I'm your AI Android Architect. Describe the app you want to build, and I'll write the code for you." }
-  ]);
-  const [buildStatus, setBuildStatus] = useState(null); // 'creating_repo', 'coding', 'pushing'
+  const [formData, setFormData] = useState({ name: "", description: "" });
 
-  // Auto-scroll to bottom of chat
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, buildStatus]);
-
-  async function handleSend() {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = input;
-    setInput(""); // Clear input
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
 
-    // 1. Add User Message to Chat
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-
     try {
-      // 2. Start the Build Process
-      setBuildStatus("analyzing");
-      
-      // We assume the first message is the "App Description"
-      // In a real app, you'd extract a name using AI. Here we generate a random one for speed.
-      const appName = "app-" + Math.random().toString(36).substring(7);
-
-      // A. Create Repo
-      setBuildStatus("creating_repo");
-      const repoRes = await fetch('/api/github/create-repo', {
-        method: 'POST',
-        body: JSON.stringify({ name: appName, description: userMessage })
-      });
-      const repoData = await repoRes.json();
-      
-      if (!repoData.success) {
-        throw new Error("GitHub Error: " + (repoData.error || "Failed to create repo"));
-      }
-
-      // B. Save to Database
-      await fetch('/api/projects', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          name: appName, 
-          description: userMessage,
-          repoName: repoData.repoName,
-          repoUrl: repoData.repoUrl
-        })
+      // 1. Create project in DB only (No GitHub yet)
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
-      // C. Generate Code
-      setBuildStatus("coding");
-      const genRes = await fetch('/api/generate/code', {
-        method: 'POST',
-        body: JSON.stringify({ prompt: userMessage })
-      });
-      const genData = await genRes.json();
+      if (!res.ok) throw new Error("Failed to create project");
+
+      const data = await res.json();
       
-      if (!genData.success) {
-         // If AI fails, we manually throw error to catch block
-         throw new Error("AI Generation Failed: " + (genData.error || "Timeout or Invalid Key"));
-      }
-
-      // D. Push to GitHub
-      setBuildStatus("pushing");
-      await fetch('/api/github/commit', {
-        method: 'POST',
-        body: JSON.stringify({
-          repoName: repoData.repoName,
-          files: genData.files,
-          message: "Initial AI Generation"
-        })
-      });
-
-      // Success!
-      setBuildStatus("done");
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "Success! I've built your app. The compilation has started on GitHub.",
-        actionLink: `/dashboard/${repoData.project?._id || ''}` // Note: You might need to adjust this ID logic depending on your API return
-      }]);
+      // 2. Redirect to the new Workspace
+      router.push(`/dashboard/${data.projectId}`);
       
-      // Redirect after a short delay
-      setTimeout(() => {
-         // If we don't have the ID from the previous step easily, we just go to dashboard
-         router.push('/dashboard'); 
-      }, 3000);
-
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'assistant', isError: true, content: "Error: " + error.message + ". Check your Vercel logs/Environment Variables." }]);
+      alert("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
-      setBuildStatus(null);
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-slate-950 mt-16 text-white">
-      
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {messages.map((msg, index) => (
-          <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl p-4 ${
-              msg.role === 'user' 
-                ? 'bg-blue-600 text-white' 
-                : msg.isError 
-                  ? 'bg-red-900/50 border border-red-500/50 text-red-200'
-                  : 'bg-slate-800 border border-slate-700 text-slate-200'
-            }`}>
-              <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-              {msg.actionLink && (
-                 <div className="mt-3 p-2 bg-black/20 rounded text-sm">
-                    Redirecting to dashboard...
-                 </div>
-              )}
-            </div>
-          </div>
-        ))}
+    <div className="min-h-screen bg-matte-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full space-y-8">
         
-        {/* Loading/Status Indicators */}
-        {buildStatus && (
-          <div className="flex justify-start animate-pulse">
-            <div className="bg-slate-900 border border-blue-500/30 text-blue-400 rounded-2xl p-4 flex items-center gap-3">
-              <Spinner />
-              <span className="text-sm font-medium uppercase tracking-wider">
-                {buildStatus === 'creating_repo' && "Creating GitHub Repo..."}
-                {buildStatus === 'coding' && "AI is writing Kotlin code..."}
-                {buildStatus === 'pushing' && "Pushing to GitHub..."}
-                {buildStatus === 'done' && "Done! Redirecting..."}
-              </span>
-            </div>
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-gradient-to-tr from-neon-blue to-neon-purple rounded-xl flex items-center justify-center shadow-lg shadow-neon-blue/20">
+            <Sparkles className="h-6 w-6 text-white" />
           </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area */}
-      <div className="p-4 bg-slate-900/80 backdrop-blur-md border-t border-white/10">
-        <div className="max-w-4xl mx-auto relative flex items-center gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            disabled={isLoading}
-            placeholder="Describe your app (e.g., 'A ToDo app with a dark theme')..."
-            className="w-full bg-slate-950 border border-slate-700 rounded-full py-4 pl-6 pr-14 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500"
-          />
-          <button 
-            onClick={handleSend}
-            disabled={isLoading || !input.trim()}
-            className="absolute right-2 p-2 bg-blue-600 hover:bg-blue-500 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-              <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-            </svg>
-          </button>
+          <h2 className="mt-6 text-3xl font-extrabold text-white">Create New App</h2>
+          <p className="mt-2 text-sm text-slate-400">
+            Describe your idea, and we'll set up the environment.
+          </p>
         </div>
+
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-2xl bg-matte-800 border border-matte-border p-6 shadow-xl space-y-4">
+            
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-slate-300">
+                App Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                className="mt-1 block w-full px-4 py-3 bg-matte-900 border border-matte-border rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-neon-blue/50 focus:border-transparent transition-all"
+                placeholder="e.g. Fitness Tracker"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-slate-300">
+                Description (Optional)
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                rows={3}
+                className="mt-1 block w-full px-4 py-3 bg-matte-900 border border-matte-border rounded-xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-neon-blue/50 focus:border-transparent transition-all"
+                placeholder="What does this app do?"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </div>
+
+          </div>
+
+          <div className="flex gap-4">
+            <Link
+              href="/dashboard"
+              className="w-full flex justify-center py-3 px-4 border border-matte-border rounded-xl shadow-sm text-sm font-medium text-slate-300 bg-matte-800 hover:bg-matte-700 focus:outline-none transition-all"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-neon-blue/20 text-sm font-bold text-black bg-gradient-to-r from-neon-blue to-neon-purple hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-blue transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <Loader2 className="animate-spin h-5 w-5" />
+              ) : (
+                "Create Workspace"
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-  );
-}
-
-// Simple Spinner Component
-function Spinner() {
-  return (
-    <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
   );
 }
