@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Smartphone, Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function CreateProject() {
@@ -15,23 +15,23 @@ export default function CreateProject() {
     setIsLoading(true);
 
     try {
-      // 1. Create project in DB only (No GitHub yet)
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) throw new Error("Failed to create project");
-
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.details || "Failed to create project");
+      }
       
-      // 2. Redirect to the new Workspace
       router.push(`/dashboard/${data.projectId}`);
       
     } catch (error) {
       console.error(error);
-      alert("Something went wrong. Please try again.");
+      alert(error.message || "Something went wrong. Please check your internet connection.");
     } finally {
       setIsLoading(false);
     }
@@ -90,14 +90,14 @@ export default function CreateProject() {
           <div className="flex gap-4">
             <Link
               href="/dashboard"
-              className="w-full flex justify-center py-3 px-4 border border-matte-border rounded-xl shadow-sm text-sm font-medium text-slate-300 bg-matte-800 hover:bg-matte-700 focus:outline-none transition-all"
+              className="w-full flex justify-center items-center py-3 px-4 border border-matte-border rounded-xl shadow-sm text-sm font-medium text-slate-300 bg-matte-800 hover:bg-matte-700 focus:outline-none transition-all"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-neon-blue/20 text-sm font-bold text-black bg-gradient-to-r from-neon-blue to-neon-purple hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-blue transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-neon-blue/20 text-sm font-bold text-black bg-gradient-to-r from-neon-blue to-neon-purple hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neon-blue transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <Loader2 className="animate-spin h-5 w-5" />
