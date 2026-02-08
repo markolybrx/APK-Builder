@@ -1,226 +1,208 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Send, FileCode, Download, ChevronRight, Loader2, Code2, Terminal, Menu, X, LayoutTemplate } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useState } from "react";
+import { 
+  Menu, X, Github, Play, Smartphone, 
+  Settings, Folder, Code2, MessageSquare, 
+  Share2, Save 
+} from "lucide-react";
+import Link from "next/link";
 
-export default function ProjectWorkspace() {
-  const { id } = useParams(); // Using 'id' or 'projectid' depending on your folder name
-  
-  // State
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [files, setFiles] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
-  
-  // Mobile Tab State (Files, Editor, Chat)
-  const [activeTab, setActiveTab] = useState("chat"); 
-  
-  const chatContainerRef = useRef(null);
-
-  // Auto-scroll chat
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const handleSendMessage = async () => {
-    if (!input.trim() || isGenerating) return;
-
-    const userMessage = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsGenerating(true);
-
-    try {
-      const response = await fetch("/api/generate/code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          prompt: userMessage.content,
-          projectId: id 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.files) {
-        setFiles(data.files);
-        const mainFile = data.files.find(f => f.path.includes("MainActivity.kt")) || data.files[0];
-        setSelectedFile(mainFile);
-        
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "I've generated the code. Check the 'Files' tab." }
-        ]);
-        
-        // On mobile, switch to editor or files to show progress
-        if (window.innerWidth < 768) {
-           setActiveTab("editor");
-        }
-      }
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: `Error: ${error.message}` }
-      ]);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+export default function Workspace({ params }) {
+  // UI States
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false); // Mobile toggle
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(true); // Right panel toggle
+  const [isGithubConnected, setIsGithubConnected] = useState(false); // Mock status
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] relative">
+    <div className="flex flex-col h-screen bg-matte-900 text-slate-300 overflow-hidden">
       
-      {/* MOBILE TABS (Visible only on small screens) */}
-      <div className="md:hidden flex border-b border-white/10 bg-slate-900">
-        <button 
-          onClick={() => setActiveTab("files")}
-          className={`flex-1 py-3 text-sm font-medium ${activeTab === "files" ? "text-blue-400 border-b-2 border-blue-400" : "text-slate-400"}`}
-        >
-          Files
-        </button>
-        <button 
-          onClick={() => setActiveTab("editor")}
-          className={`flex-1 py-3 text-sm font-medium ${activeTab === "editor" ? "text-blue-400 border-b-2 border-blue-400" : "text-slate-400"}`}
-        >
-          Editor
-        </button>
-        <button 
-          onClick={() => setActiveTab("chat")}
-          className={`flex-1 py-3 text-sm font-medium ${activeTab === "chat" ? "text-blue-400 border-b-2 border-blue-400" : "text-slate-400"}`}
-        >
-          Chat
-        </button>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden relative">
+      {/* --- TOP NAVIGATION BAR --- */}
+      <header className="h-16 bg-matte-800 border-b border-matte-border flex items-center justify-between px-4 z-50">
         
-        {/* LEFT COLUMN: File Explorer */}
-        <div className={`
-          absolute inset-0 z-10 bg-slate-900 md:static md:w-64 md:flex-shrink-0 md:bg-slate-900/50 md:glass md:border md:border-white/10 md:rounded-xl md:flex md:flex-col
-          ${activeTab === "files" ? "flex flex-col" : "hidden md:flex"}
-        `}>
-          <div className="p-4 border-b border-white/10 bg-white/5">
-            <h2 className="font-semibold text-white flex items-center gap-2">
-              <FileCode className="w-4 h-4 text-blue-400" /> Project Files
-            </h2>
-          </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {files.length === 0 ? (
-              <div className="text-center text-slate-500 text-sm py-8 px-4">No files yet.</div>
-            ) : (
-              files.map((file, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setSelectedFile(file);
-                    // On mobile, auto-switch to editor when file is clicked
-                    if (window.innerWidth < 768) setActiveTab("editor");
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate flex items-center gap-2 transition-all ${
-                    selectedFile === file 
-                      ? "bg-blue-600/20 text-blue-300 border border-blue-500/30" 
-                      : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <ChevronRight className="w-3 h-3 opacity-50" />
-                  {file.path.split('/').pop()}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* MIDDLE COLUMN: Code Editor */}
-        <div className={`
-          absolute inset-0 z-10 bg-slate-950 md:static md:flex-1 md:border md:border-white/10 md:rounded-xl md:flex md:flex-col md:shadow-2xl
-          ${activeTab === "editor" ? "flex flex-col" : "hidden md:flex"}
-        `}>
-          <div className="h-12 bg-slate-900 border-b border-white/10 flex items-center justify-between px-4">
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-               <Code2 className="w-4 h-4" />
-               <span className="font-mono text-xs truncate max-w-[200px]">
-                 {selectedFile ? selectedFile.path : "No file selected"}
-               </span>
+        {/* Left: Logo & Mobile Toggle */}
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+            className="md:hidden p-2 text-slate-400 hover:text-white"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          
+          <Link href="/dashboard" className="font-bold text-white flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-tr from-neon-blue to-neon-purple rounded-lg flex items-center justify-center">
+              <Code2 className="w-5 h-5 text-white" />
             </div>
-            <button className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white">
-              <Download className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-auto p-4 font-mono text-sm bg-[#0d1117]">
-            {selectedFile ? (
-              <pre className="text-slate-300 leading-relaxed">
-                <code>{selectedFile.content}</code>
-              </pre>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-600">
-                <Terminal className="w-12 h-12 mb-4 opacity-20" />
-                <p>Select a file to view code</p>
-              </div>
-            )}
-          </div>
+            <span className="hidden md:inline">AppBuilder</span>
+          </Link>
         </div>
 
-        {/* RIGHT COLUMN: AI Chat */}
-        <div className={`
-          absolute inset-0 z-10 bg-slate-900 md:static md:w-80 md:flex-shrink-0 md:bg-slate-900/50 md:glass md:border md:border-white/10 md:rounded-xl md:flex md:flex-col
-          ${activeTab === "chat" ? "flex flex-col" : "hidden md:flex"}
-        `}>
-          <div className="p-4 border-b border-white/10 bg-white/5">
-            <h2 className="font-semibold text-white">Gemini Assistant</h2>
+        {/* Center: Project Actions */}
+        <div className="flex items-center gap-2">
+           {/* GITHUB CONNECT BUTTON (The Feature You Requested) */}
+          {!isGithubConnected ? (
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-[#24292F] hover:bg-[#24292F]/80 text-white text-xs font-bold rounded-lg border border-white/10 transition-all">
+              <Github className="w-3.5 h-3.5" />
+              Link GitHub
+            </button>
+          ) : (
+            <span className="text-xs text-green-400 flex items-center gap-1 bg-green-900/20 px-2 py-1 rounded border border-green-900/50">
+              <Github className="w-3 h-3" /> Linked
+            </span>
+          )}
+
+          <div className="h-6 w-px bg-matte-border mx-2" />
+
+          <button className="p-2 text-neon-blue bg-neon-blue/10 rounded-lg hover:bg-neon-blue/20 transition-all">
+            <Play className="w-4 h-4 fill-current" />
+          </button>
+        </div>
+
+        {/* Right: AI Toggle */}
+        <button 
+          onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
+          className={`p-2 rounded-lg transition-all ${rightSidebarOpen ? 'text-white bg-matte-700' : 'text-slate-400 hover:text-white'}`}
+        >
+          <MessageSquare className="w-5 h-5" />
+        </button>
+      </header>
+
+
+      {/* --- MAIN WORKSPACE (3 Columns) --- */}
+      <div className="flex-1 flex overflow-hidden relative">
+
+        {/* 1. LEFT SIDEBAR (File Explorer) */}
+        {/* Hidden on mobile by default, fixed width on desktop */}
+        <aside 
+          className={`
+            absolute md:relative z-40 h-full w-64 bg-matte-900 border-r border-matte-border transition-transform duration-300 ease-in-out
+            ${leftSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}
+        >
+          <div className="p-4 border-b border-matte-border flex justify-between items-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Explorer</span>
+            <button onClick={() => setLeftSidebarOpen(false)} className="md:hidden text-slate-400"><X className="w-4 h-4"/></button>
           </div>
           
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 md:pb-4">
-            {messages.length === 0 && (
-              <div className="text-center text-slate-500 text-sm mt-10">
-                <p>Describe your app concept to start.</p>
-              </div>
-            )}
-            
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                  msg.role === "user" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-200 border border-white/10"
-                }`}>
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            
-            {isGenerating && (
-              <div className="flex justify-start">
-                <div className="bg-slate-800 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-2 text-slate-400 text-sm">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                  <span>Writing code...</span>
-                </div>
-              </div>
-            )}
+          <div className="p-2 space-y-1">
+            {/* Mock File Tree */}
+            <FileItem name="app" type="folder" isOpen={true} />
+            <div className="pl-4 space-y-1">
+               <FileItem name="src" type="folder" />
+               <FileItem name="MainActivity.kt" type="file" active />
+               <FileItem name="ui_layout.xml" type="file" />
+               <FileItem name="AndroidManifest.xml" type="file" />
+            </div>
+            <FileItem name="gradle" type="folder" />
+          </div>
+        </aside>
+
+        {/* 2. CENTER PANEL (Code Editor / Canvas) */}
+        <main className="flex-1 bg-matte-800 relative flex flex-col min-w-0">
+          
+          {/* Editor Tabs */}
+          <div className="flex items-center bg-matte-900 border-b border-matte-border overflow-x-auto no-scrollbar">
+            <Tab name="MainActivity.kt" active />
+            <Tab name="ui_layout.xml" />
           </div>
 
-          <div className="p-3 border-t border-white/10 bg-slate-900/80">
-            <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="relative">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Describe your app..."
-                className="w-full bg-slate-950 border border-slate-700 text-white text-sm rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:border-blue-500"
-              />
-              <button 
-                type="submit"
-                disabled={!input.trim() || isGenerating}
-                className="absolute right-2 top-2 p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
+          {/* Editor Content Area */}
+          <div className="flex-1 p-8 overflow-auto">
+             <div className="font-mono text-sm text-slate-400">
+               <span className="text-purple-400">package</span> com.example.app<br/><br/>
+               <span className="text-purple-400">import</span> android.os.Bundle<br/>
+               <span className="text-purple-400">import</span> androidx.activity.ComponentActivity<br/><br/>
+               <span className="text-blue-400">class</span> <span className="text-yellow-400">MainActivity</span> : <span className="text-yellow-400">ComponentActivity</span>() {'{'}<br/>
+               &nbsp;&nbsp;<span className="text-blue-400">override fun</span> <span className="text-yellow-400">onCreate</span>(savedInstanceState: Bundle?) {'{'}<br/>
+               &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">super</span>.onCreate(savedInstanceState)<br/>
+               &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-slate-500">// Your AI generated code appears here...</span><br/>
+               &nbsp;&nbsp;{'}'}<br/>
+               {'}'}
+             </div>
           </div>
-        </div>
+
+        </main>
+
+        {/* 3. RIGHT SIDEBAR (AI Assistant) */}
+        {/* Hidden on mobile unless toggled, fixed width on desktop if open */}
+        {rightSidebarOpen && (
+          <aside className="w-80 bg-matte-900 border-l border-matte-border flex flex-col absolute right-0 h-full md:relative z-30 shadow-2xl md:shadow-none">
+            
+            <div className="p-4 border-b border-matte-border bg-matte-900">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-neon-purple" />
+                AI Architect
+              </h3>
+            </div>
+
+            <div className="flex-1 p-4 overflow-y-auto space-y-4">
+              {/* Chat Message: AI */}
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-lg bg-matte-800 border border-matte-border flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-neon-purple" />
+                </div>
+                <div className="bg-matte-800 rounded-2xl rounded-tl-none p-3 text-sm text-slate-300 border border-matte-border">
+                  I've initialized your Android project. Do you want to add a login screen or a map view first?
+                </div>
+              </div>
+
+              {/* Chat Message: User */}
+              <div className="flex gap-3 flex-row-reverse">
+                <div className="w-8 h-8 rounded-lg bg-neon-blue/20 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-neon-blue">YO</span>
+                </div>
+                <div className="bg-neon-blue/10 rounded-2xl rounded-tr-none p-3 text-sm text-white border border-neon-blue/20">
+                  Let's start with a login screen using Google Auth.
+                </div>
+              </div>
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-matte-border bg-matte-900">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Ask AI to edit code..."
+                  className="w-full bg-matte-800 border border-matte-border rounded-xl pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-neon-purple/50 transition-colors"
+                />
+                <button className="absolute right-2 top-2 p-1 text-slate-400 hover:text-white">
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+          </aside>
+        )}
 
       </div>
+    </div>
+  );
+}
+
+// --- Helper Components ---
+
+function FileItem({ name, type, isOpen, active }) {
+  return (
+    <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm cursor-pointer ${active ? 'bg-neon-blue/10 text-neon-blue' : 'text-slate-400 hover:bg-matte-800 hover:text-white'}`}>
+      {type === 'folder' ? (
+        <Folder className={`w-4 h-4 ${isOpen ? 'text-slate-200' : 'text-slate-500'}`} />
+      ) : (
+        <Code2 className="w-4 h-4 text-slate-500" />
+      )}
+      <span>{name}</span>
+    </div>
+  );
+}
+
+function Tab({ name, active }) {
+  return (
+    <div className={`
+      px-4 py-2.5 text-xs font-medium border-r border-matte-border cursor-pointer flex items-center gap-2
+      ${active ? 'bg-matte-800 text-white border-t-2 border-t-neon-blue' : 'text-slate-500 hover:bg-matte-800 hover:text-slate-300'}
+    `}>
+      <span className="text-blue-400">Kt</span>
+      {name}
+      {active && <X className="w-3 h-3 ml-2 hover:text-red-400" />}
     </div>
   );
 }
