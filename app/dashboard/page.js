@@ -1,39 +1,62 @@
 export const dynamic = 'force-dynamic';
-import Link from 'next/link';
-import { headers } from 'next/headers';
-import { Plus, Search, Terminal, Smartphone, Calendar, Package } from 'lucide-react';
 
-async function getProjects() {
+import Link from 'next/link';
+import { getServerSession } from "next-auth";
+import { authOptions } from "../api/auth/[...nextauth]/route"; // Import auth options
+import { clientPromise } from "@/lib/db"; // Import DB directly
+import { redirect } from "next/navigation";
+import { Plus, Search, Terminal, Smartphone, Calendar, Package, ArrowRight } from 'lucide-react';
+
+// Database Fetching Logic (No HTTP Fetch needed!)
+async function getProjects(userId) {
   try {
-    // Ensure NEXTAUTH_URL is set in your .env.local (e.g., http://localhost:3000)
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const res = await fetch(`${baseUrl}/api/projects`, {
-      cache: 'no-store',
-      headers: headers(),
-    });
+    const client = await clientPromise;
+    const db = client.db();
     
-    if (!res.ok) return [];
-    const json = await res.json();
-    return json.projects || [];
+    // Direct DB Query - Faster and Reliable
+    const projects = await db.collection("projects")
+      .find({ userId: userId })
+      .sort({ updatedAt: -1 })
+      .toArray();
+
+    // Convert MongoDB objects to plain JS objects to avoid React warnings
+    return projects.map(p => ({
+      ...p,
+      _id: p._id.toString(),
+      userId: p.userId.toString(),
+      // Ensure dates are strings or handled correctly
+      createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : null,
+      updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : null,
+    }));
+
   } catch (error) {
-    console.error("Failed to fetch projects:", error);
+    console.error("Failed to fetch projects from DB:", error);
     return [];
   }
 }
 
 export default async function Dashboard() {
-  const projects = await getProjects();
+  // 1. Check Session Server-Side
+  const session = await getServerSession(authOptions);
+  
+  // 2. Security Guard: If no session, kick them out
+  if (!session) {
+    redirect('/login');
+  }
+
+  // 3. Get Data directly from DB
+  const projects = await getProjects(session.user.id);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      
+    <div className="max-w-6xl mx-auto space-y-8 p-4 md:p-8">
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard</h1>
           <p className="text-slate-400 mt-1">Manage your Android apps and builds.</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {/* Search Bar (Visual) */}
           <div className="relative hidden md:block group">
@@ -72,21 +95,21 @@ export default async function Dashboard() {
 // --- Components ---
 
 function ProjectCard({ project }) {
-  // Format Date (e.g., "Feb 14, 2024")
-  const date = new Date(project.updatedAt || Date.now()).toLocaleDateString("en-US", {
+  // Format Date safely
+  const dateStr = project.updatedAt ? new Date(project.updatedAt).toLocaleDateString("en-US", {
     month: "short", day: "numeric", year: "numeric"
-  });
+  }) : "Just now";
 
   return (
     <Link href={`/dashboard/${project._id}`} className="group block h-full">
-      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 h-full hover:border-blue-500/50 hover:bg-slate-800 transition-all duration-300 relative overflow-hidden">
-        
+      <div className="bg-slate-900/50 backdrop-blur-sm border border-white/10 rounded-xl p-5 h-full hover:border-blue-500/50 hover:bg-slate-800/80 transition-all duration-300 relative overflow-hidden">
+
         {/* Hover Glow Effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
 
         {/* Header */}
         <div className="flex justify-between items-start mb-4 relative z-10">
-          <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center border border-slate-700 group-hover:border-blue-500/30 transition-colors">
+          <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center border border-white/5 group-hover:border-blue-500/30 transition-colors">
             <Smartphone className="w-6 h-6 text-blue-400" />
           </div>
           <StatusBadge status={project.buildStatus || 'draft'} />
@@ -103,14 +126,14 @@ function ProjectCard({ project }) {
         </div>
 
         {/* Footer Info */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 relative z-10 text-xs text-slate-500">
+        <div className="flex items-center justify-between pt-4 border-t border-white/5 relative z-10 text-xs text-slate-500">
           <div className="flex items-center gap-1.5">
             <Package className="w-3.5 h-3.5" />
             <span className="font-mono">{project.packageName || "com.app.draft"}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5" />
-            <span>{date}</span>
+            <span>{dateStr}</span>
           </div>
         </div>
 
@@ -143,7 +166,7 @@ function StatusBadge({ status }) {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-20 bg-slate-800/30 rounded-2xl border border-dashed border-slate-700">
+    <div className="flex flex-col items-center justify-center py-20 bg-slate-900/30 rounded-2xl border border-dashed border-slate-700">
       <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6">
         <Terminal className="w-10 h-10 text-slate-600" />
       </div>
