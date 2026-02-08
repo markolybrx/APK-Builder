@@ -1,39 +1,79 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: 15, 23, 42; /* Slate 900 */
-  --foreground: 255, 255, 255;
+  --background: 5, 5, 5; /* Matte Black #050505 */
+  --foreground: 250, 250, 250;
 }
 
 body {
   color: rgb(var(--foreground));
   background-color: rgb(var(--background));
-  /* Modern Mesh Gradient Background */
+  /* The Premium Matte Gradient */
   background-image: 
-    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+    radial-gradient(circle at 50% 0%, rgba(96, 165, 250, 0.05) 0%, transparent 50%), /* Subtle Blue Glow top */
+    radial-gradient(circle at 100% 0%, rgba(192, 132, 252, 0.05) 0%, transparent 50%); /* Subtle Purple Glow right */
   min-height: 100vh;
+  /* Anti-aliasing for crisp code font */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassmorphism Utilities */
+/* PREMIUM GLASS UTILITIES 
+   Darker, flatter, less "shiny" than standard glassmorphism 
+*/
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(20, 20, 20, 0.6); /* Darker tint */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08); /* Thinner, subtler border */
 }
 
-.glass-hover:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+.glass-panel {
+  background: #0a0a0a;
+  border: 1px solid #27272a; /* Zinc 800 */
 }
 
-/* Text Gradients */
+/* PASTEL NEON TEXT GRADIENTS 
+   Used for Headings to make them pop against the matte black
+*/
 .text-gradient {
-  background: linear-gradient(to right, #60a5fa, #c084fc);
+  background: linear-gradient(to right, #60a5fa, #c084fc, #22d3ee);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: gradientMove 5s linear infinite;
+}
+
+/* NEON BORDER GLOW 
+   Use this on active inputs or important cards
+*/
+.border-glow:focus-within, .border-glow:hover {
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 0 15px -3px rgba(96, 165, 250, 0.2);
+}
+
+/* SCROLLBAR 
+   Thin, dark, and minimal
+*/
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #050505; 
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46; 
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
