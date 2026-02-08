@@ -1,11 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 1. Force the output folder to be what Netlify expects
-  distDir: '.next',
-  
   images: {
-    // 2. Disable default optimization (fixes broken images on Netlify)
-    unoptimized: true, 
     remotePatterns: [
       {
         protocol: 'https',
@@ -13,11 +8,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'oaidalleapiprodscus.blob.core.windows.net',
+        hostname: 'oaidalleapiprodscus.blob.core.windows.net', // For DALL-E
       },
       {
         protocol: 'https',
-        hostname: 'raw.githubusercontent.com',
+        hostname: 'raw.githubusercontent.com', // For raw code/images
       },
     ],
   },
