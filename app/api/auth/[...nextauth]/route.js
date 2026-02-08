@@ -4,14 +4,18 @@ import GoogleProvider from "next-auth/providers/google";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import { clientPromise } from "@/lib/db";
 
-// 1. EXPORT authOptions so other API routes can use it
 export const authOptions = {
   adapter: MongoDBAdapter(clientPromise),
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID,
       clientSecret: process.env.GITHUB_SECRET,
-      authorization: { params: { scope: "repo read:user user:email" } },
+      authorization: {
+        params: {
+          // 'repo' for access, no display param lets GitHub auto-detect mobile
+          scope: "repo read:user user:email",
+        },
+      },
     }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
