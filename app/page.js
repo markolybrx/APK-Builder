@@ -6,12 +6,13 @@ import { ArrowRight, Smartphone, Code2, CloudLightning, Sparkles, Terminal, Down
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#0f172a] overflow-hidden">
+    // UPDATED: Uses 'bg-matte-900' and text colors to match the new theme
+    <div className="flex flex-col min-h-screen bg-matte-900 overflow-hidden text-white">
       
-      {/* Background Gradients */}
+      {/* Background Gradients (Matches globals.css) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-neon-blue/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-neon-purple/5 rounded-full blur-[120px]" />
       </div>
 
       {/* Hero Section */}
@@ -22,7 +23,7 @@ export default function Home() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs font-bold uppercase tracking-widest backdrop-blur-md"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-neon-blue/30 bg-neon-blue/10 text-neon-blue text-xs font-bold uppercase tracking-widest backdrop-blur-md"
         >
           <Sparkles className="w-3 h-3" />
           <span>V2.0 Public Beta Live</span>
@@ -33,10 +34,10 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-extrabold tracking-tight text-white leading-[1.1]"
+          className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.1]"
         >
           Turn Your Words Into <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-cyan to-neon-purple animate-pulse-slow">
             Real Android Apps
           </span>
         </motion.h1>
@@ -57,10 +58,10 @@ export default function Home() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row gap-4 mt-8 w-full justify-center"
         >
-          {/* UPDATED LINK: Goes to /login instead of /dashboard */}
+          {/* UPDATED: Neon Gradient Button */}
           <Link 
             href="/login" 
-            className="group flex items-center justify-center gap-2 px-8 py-4 text-lg font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 hover:scale-105"
+            className="group flex items-center justify-center gap-2 px-8 py-4 text-lg font-bold text-black bg-gradient-to-r from-neon-blue to-neon-purple rounded-xl transition-all shadow-lg shadow-neon-blue/20 hover:scale-105 hover:shadow-neon-blue/40"
           >
             Start Building Free
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -68,7 +69,7 @@ export default function Home() {
           
           <Link 
             href="#how-it-works"
-            className="flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-slate-300 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all backdrop-blur-sm"
+            className="flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-slate-300 bg-matte-800 border border-matte-border rounded-xl hover:bg-matte-700 transition-all backdrop-blur-sm"
           >
             <Smartphone className="w-5 h-5" />
             View Demo
@@ -76,8 +77,8 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* How It Works Section (Visual) */}
-      <section id="how-it-works" className="relative z-10 py-20 bg-slate-900/50 border-y border-white/5 scroll-mt-20">
+      {/* How It Works Section */}
+      <section id="how-it-works" className="relative z-10 py-20 bg-matte-800/50 border-y border-matte-border scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-white mb-4">From Idea to APK in Minutes</h2>
@@ -89,13 +90,13 @@ export default function Home() {
               step="01"
               title="Describe It"
               desc="Tell our AI what you want. 'A fitness tracker with a dark mode and a timer.'"
-              icon={<Terminal className="w-6 h-6 text-blue-400" />}
+              icon={<Terminal className="w-6 h-6 text-neon-blue" />}
             />
             <StepCard 
               step="02"
               title="AI Builds It"
               desc="We generate full Android Studio projects: Kotlin, XML, and Gradle files."
-              icon={<Code2 className="w-6 h-6 text-purple-400" />}
+              icon={<Code2 className="w-6 h-6 text-neon-purple" />}
             />
             <StepCard 
               step="03"
@@ -116,7 +117,7 @@ export default function Home() {
             desc="Our proprietary model translates natural language into production-grade Kotlin code in seconds."
           />
           <FeatureCard 
-            icon={<Smartphone className="w-6 h-6 text-blue-400" />}
+            icon={<Smartphone className="w-6 h-6 text-neon-blue" />}
             title="Native Android" 
             desc="We don't build web-wrappers. You get real, performant native apps that access the camera, GPS, and sensors."
           />
@@ -128,8 +129,8 @@ export default function Home() {
         </div>
       </section>
       
-      {/* Footer Simple */}
-      <footer className="relative z-10 py-8 text-center text-slate-600 text-sm border-t border-white/5">
+      {/* Footer */}
+      <footer className="relative z-10 py-8 text-center text-slate-600 text-sm border-t border-matte-border bg-matte-900">
         <p>© 2026 AppBuild AI. All rights reserved.</p>
       </footer>
     </div>
@@ -140,11 +141,11 @@ export default function Home() {
 
 function StepCard({ step, title, desc, icon }) {
   return (
-    <div className="relative p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-      <div className="absolute -top-4 -left-4 w-10 h-10 bg-slate-800 rounded-xl border border-white/10 flex items-center justify-center text-slate-400 font-mono font-bold">
+    <div className="relative p-8 rounded-2xl bg-matte-900 border border-matte-border hover:border-neon-blue/30 transition-colors">
+      <div className="absolute -top-4 -left-4 w-10 h-10 bg-matte-800 rounded-xl border border-matte-border flex items-center justify-center text-slate-400 font-mono font-bold">
         {step}
       </div>
-      <div className="mb-4 p-3 bg-slate-800/50 rounded-lg w-fit">
+      <div className="mb-4 p-3 bg-matte-800 rounded-lg w-fit border border-matte-border">
         {icon}
       </div>
       <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
@@ -157,9 +158,9 @@ function FeatureCard({ title, desc, icon }) {
   return (
     <motion.div 
       whileHover={{ y: -5 }}
-      className="p-6 rounded-2xl bg-slate-900/50 border border-white/5 hover:border-blue-500/30 hover:bg-slate-800/50 transition-all group"
+      className="p-6 rounded-2xl bg-matte-800/50 border border-matte-border hover:border-neon-blue/30 hover:bg-matte-800 transition-all group"
     >
-      <div className="w-12 h-12 mb-4 rounded-xl bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+      <div className="w-12 h-12 mb-4 rounded-xl bg-matte-900 flex items-center justify-center group-hover:scale-110 transition-transform border border-matte-border">
         {icon}
       </div>
       <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
