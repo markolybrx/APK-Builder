@@ -66,8 +66,7 @@ export default function Home() {
           </Link>
           
           <Link 
-            href="https://github.com" 
-            target="_blank"
+            href="#how-it-works"
             className="flex items-center justify-center gap-2 px-8 py-4 text-lg font-semibold text-slate-300 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all backdrop-blur-sm"
           >
             <Smartphone className="w-5 h-5" />
@@ -77,7 +76,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section (Visual) */}
-      <section className="relative z-10 py-20 bg-slate-900/50 border-y border-white/5">
+      <section id="how-it-works" className="relative z-10 py-20 bg-slate-900/50 border-y border-white/5 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-white mb-4">From Idea to APK in Minutes</h2>
