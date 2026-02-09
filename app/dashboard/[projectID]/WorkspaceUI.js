@@ -20,12 +20,12 @@ import CloneVision from "./components/CloneVision";
 import QRShareModal from "./components/QRShareModal";
 import LogicMapView from "./components/LogicMapView";
 import WelcomeTour from "./components/WelcomeTour";
-import DebuggerView from "./components/DebuggerView"; // NEW: AI Debugger
+import DebuggerView from "./components/DebuggerView"; 
 
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
-  // --- 1. GLOBAL FILE SYSTEM STATE (Source of Truth) ---
+  // --- 1. GLOBAL FILE SYSTEM STATE ---
   const [projectFiles, setProjectFiles] = useState([
     { name: "MainActivity.kt", path: "app/src/main/java/", content: "// Welcome to AppBuild AI\n// Your generated code will appear here." },
     { name: "activity_main.xml", path: "app/src/main/res/layout/", content: "\n<LinearLayout />" },
@@ -55,7 +55,6 @@ export default function WorkspaceUI({ project }) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
-  // --- 2. GLOBAL FILE UPDATE FUNCTION (The Brain Connection) ---
   const updateFile = (fileName, newContent) => {
     setProjectFiles(prev => prev.map(file => 
       file.name === fileName ? { ...file, content: newContent } : file
@@ -71,7 +70,6 @@ export default function WorkspaceUI({ project }) {
     }]);
   };
 
-  // --- LAYOUT ENGINE Fix ---
   useEffect(() => {
     const handleResize = () => {
       const vh = window.innerHeight * 0.01;
@@ -99,6 +97,7 @@ export default function WorkspaceUI({ project }) {
       className="flex flex-col w-full bg-[#0f172a] text-slate-300 font-sans overflow-hidden fixed inset-0" 
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
+      {/* TIER 1: FIXED TOP HEADER */}
       <Header 
         project={project}
         triggerHaptic={triggerHaptic}
@@ -108,7 +107,10 @@ export default function WorkspaceUI({ project }) {
         onProfileClick={() => { setIsProfileOpen(true); triggerHaptic(); }}
       />
 
+      {/* TIER 2: MIDDLE VIEWPORT (SANDWICHED) */}
       <div className="flex flex-1 overflow-hidden relative min-h-0">
+        
+        {/* SIDEBAR: FIXED BOUNDARY (No internal scroll) */}
         <NavigationRail 
           activeView={activeView} 
           setActiveView={setActiveView} 
@@ -116,6 +118,7 @@ export default function WorkspaceUI({ project }) {
           triggerHaptic={triggerHaptic}
         />
 
+        {/* MAIN WORKSPACE: FIXED BOUNDARY */}
         <main className="flex-1 flex flex-col min-w-0 bg-[#0f172a] relative overflow-hidden">
           {activeView === 'chat' && (
              <ChatInterface 
@@ -152,7 +155,6 @@ export default function WorkspaceUI({ project }) {
              />
           )}
 
-          {/* NEW: DEBUGGER VIEW INTEGRATION */}
           {activeView === 'debug' && (
              <DebuggerView 
                 files={projectFiles} 
@@ -175,19 +177,22 @@ export default function WorkspaceUI({ project }) {
                    Profile
                    <button onClick={() => setIsProfileOpen(false)} className="p-1"><X className="w-5 h-5" /></button>
                 </div>
-                {/* Profile content... */}
+                <div className="p-6 flex flex-col items-center border-b border-slate-800 text-center">
+                    <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-blue-500 flex items-center justify-center mb-3">
+                       <User className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <h3 className="font-bold text-white">Visionary User</h3>
+                </div>
              </div>
            </>
         )}
       </div>
 
-      {/* --- FLOATING MODALS --- */}
-      <RepoConverter 
-        isOpen={isConverterOpen} 
-        onClose={() => setIsConverterOpen(false)} 
-        onUpdateFile={updateFile} // Enabled logic for real conversion
-        triggerHaptic={triggerHaptic} 
-      />
+      {/* TIER 3: FIXED 1PX FOOTER ANCHOR */}
+      <div className="h-[1px] w-full bg-slate-800/50 shrink-0 z-[100]" />
+
+      {/* --- OVERLAYS --- */}
+      <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
       <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} onCloneSuccess={handleCloneSuccess} />
       <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} />
       {showTour && <WelcomeTour onComplete={() => setShowTour(false)} triggerHaptic={triggerHaptic} />}
