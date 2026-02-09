@@ -2,235 +2,261 @@
 
 import { useState } from "react";
 import { 
-  Menu, X, Github, Play, Smartphone, 
-  Settings, Folder, Code2, MessageSquare, 
-  Share2, Save, Sparkles, FileCode, FileJson 
+  Menu, X, Play, Send, 
+  Smartphone, Code2, Monitor, 
+  Settings, Folder, FileCode, ChevronRight 
 } from "lucide-react";
 import Link from "next/link";
 
 export default function WorkspaceUI({ project }) {
-  // UI States
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
-  const [isGithubConnected, setIsGithubConnected] = useState(false); 
+  // --- STATE ---
+  const [leftOpen, setLeftOpen] = useState(false);  // File Explorer
+  const [rightOpen, setRightOpen] = useState(false); // Preview Window
+  
+  // Mock Chat History
+  const [messages, setMessages] = useState([
+    { role: 'ai', text: `Hi! I'm ready to build "${project?.name || 'your app'}". What feature should we add first?` },
+  ]);
+  const [inputValue, setInputValue] = useState("");
 
-  // Helpers
-  const toggleLeftSidebar = () => setLeftSidebarOpen(!leftSidebarOpen);
-  const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen);
+  // --- HANDLERS ---
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+    // Add user message
+    setMessages(prev => [...prev, { role: 'user', text: inputValue }]);
+    setInputValue("");
+    
+    // Fake AI Response (Simulated delay)
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: 'ai', text: "I'm working on that. I've updated the Main Activity to include those buttons." }]);
+      // Auto-open preview to show "work"
+      setRightOpen(true); 
+    }, 1000);
+  };
 
   return (
-    // FIXED HEIGHT CONTAINER: h-screen + overflow-hidden locks the viewport
+    // ROOT CONTAINER - Fixed Height, No Window Scroll
     <div className="flex flex-col h-screen w-full bg-slate-950 text-slate-300 overflow-hidden font-sans fixed inset-0">
 
-      {/* --- TOP NAVIGATION BAR (Fixed Height) --- */}
-      <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-50 shrink-0 select-none">
+      {/* --- 1. HEADER (Fixed) --- */}
+      <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-50 shrink-0">
         
-        {/* Left: Mobile Menu & Logo */}
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={toggleLeftSidebar}
-            className="md:hidden p-2 -ml-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-
-          <Link href="/dashboard" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Code2 className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col">
-                <span className="font-bold text-white leading-none text-sm md:text-base">
-                  {project?.name || "Untitled App"}
-                </span>
-                <span className="text-[10px] text-slate-500 font-mono hidden md:inline">
-                  {project?.packageName || "com.app.draft"}
-                </span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Center: Toolbar Actions */}
-        <div className="flex items-center gap-2">
-          {!isGithubConnected ? (
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-[#24292F] hover:bg-[#24292F]/80 text-white text-xs font-bold rounded-lg border border-white/10 transition-all">
-              <Github className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Link GitHub</span>
-            </button>
-          ) : (
-            <span className="text-xs text-green-400 flex items-center gap-1 bg-green-900/20 px-2 py-1 rounded border border-green-900/50">
-              <Github className="w-3 h-3" /> Linked
-            </span>
-          )}
-
-          <div className="h-6 w-px bg-slate-800 mx-1 md:mx-2" />
-
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-600/20 active:scale-95">
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span className="hidden sm:inline">Build APK</span>
-          </button>
-        </div>
-
-        {/* Right: AI Toggle */}
+        {/* LEFT: File Menu Toggle */}
         <button 
-          onClick={toggleRightSidebar}
-          className={`p-2 rounded-lg transition-all ml-2 ${rightSidebarOpen ? 'text-white bg-blue-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+          onClick={() => setLeftOpen(!leftOpen)}
+          className={`p-2 rounded-lg transition-colors ${leftOpen ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}
         >
-          <MessageSquare className="w-5 h-5" />
+          <Menu className="w-6 h-6" />
+        </button>
+
+        {/* CENTER: Project Title */}
+        <div className="flex flex-col items-center">
+          <span className="font-bold text-white text-sm">{project?.name || "Untitled App"}</span>
+          <span className="text-[10px] text-green-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/> 
+            Online
+          </span>
+        </div>
+
+        {/* RIGHT: Preview Toggle (Play Button) */}
+        <button 
+          onClick={() => setRightOpen(!rightOpen)}
+          className={`p-2 rounded-lg transition-colors flex items-center gap-2 ${rightOpen ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white bg-slate-800/50'}`}
+        >
+          <span className="hidden md:inline text-xs font-bold">Preview</span>
+          <Play className="w-5 h-5 fill-current" />
         </button>
       </header>
 
 
-      {/* --- MAIN WORKSPACE AREA (Flex-1 fills remaining height) --- */}
-      <div className="flex-1 flex overflow-hidden relative w-full">
+      {/* --- 2. MAIN BODY (Flex Row) --- */}
+      <div className="flex-1 flex overflow-hidden relative">
 
-        {/* 1. LEFT SIDEBAR (File Explorer) */}
+        {/* === LEFT SIDEBAR: FILE EXPLORER === */}
+        {/* Mobile: Slides over. Desktop: Pushes content? Let's keep it overlay for maximum Chat space on mobile. */}
         <aside 
           className={`
-            absolute md:relative z-40 h-full w-64 bg-slate-950 border-r border-slate-800 shadow-2xl md:shadow-none transition-transform duration-300 ease-in-out flex flex-col
-            ${leftSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            absolute top-0 bottom-0 left-0 z-40 w-72 bg-slate-900 border-r border-slate-800 shadow-2xl transition-transform duration-300 ease-in-out
+            ${leftOpen ? 'translate-x-0' : '-translate-x-full'}
           `}
         >
-          <div className="p-4 border-b border-slate-800 flex justify-between items-center h-12 shrink-0">
+          <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Project Files</span>
-            <button onClick={() => setLeftSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white">
-              <X className="w-4 h-4"/>
+            <button onClick={() => setLeftOpen(false)} className="text-slate-400 hover:text-white">
+              <X className="w-5 h-5"/>
             </button>
           </div>
-
-          {/* SCROLLABLE LIST */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1 font-mono text-sm custom-scrollbar">
-            <FileItem name="app" type="folder" isOpen={true} />
-            <div className="pl-4 space-y-1 border-l border-slate-800 ml-2">
-               <FileItem name="src" type="folder" />
-               <div className="pl-4 space-y-1 border-l border-slate-800 ml-2">
-                 <FileItem name="main" type="folder" />
-                 <FileItem name="java" type="folder" />
-                 <FileItem name="MainActivity.kt" type="file" icon={<FileCode className="w-4 h-4 text-blue-400"/>} active />
-                 <FileItem name="res" type="folder" />
-                 <FileItem name="layout" type="folder" />
-                 <FileItem name="activity_main.xml" type="file" icon={<FileCode className="w-4 h-4 text-orange-400"/>} />
-                 <FileItem name="AndroidManifest.xml" type="file" icon={<FileCode className="w-4 h-4 text-green-400"/>} />
-               </div>
-            </div>
-            <FileItem name="build.gradle" type="file" icon={<Settings className="w-4 h-4 text-slate-400"/>} />
+          <div className="p-2 overflow-y-auto h-full pb-20">
+            <FileTree />
           </div>
         </aside>
 
-        {/* OVERLAY for Mobile Sidebar */}
-        {leftSidebarOpen && (
-          <div 
-            className="absolute inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm"
-            onClick={() => setLeftSidebarOpen(false)}
-          />
+        {/* CLICK OUTSIDE TO CLOSE LEFT SIDEBAR (Mobile Overlay) */}
+        {leftOpen && (
+          <div className="absolute inset-0 bg-black/60 z-30 backdrop-blur-sm" onClick={() => setLeftOpen(false)} />
         )}
 
 
-        {/* 2. CENTER PANEL (Code Editor) */}
-        <main className="flex-1 bg-[#0f172a] relative flex flex-col min-w-0 h-full">
+        {/* === CENTER: AI CHAT (Always Visible) === */}
+        <main className="flex-1 flex flex-col bg-[#0f172a] relative z-0 w-full">
           
-          {/* Editor Tabs (Fixed Height) */}
-          <div className="flex items-center bg-slate-900 border-b border-slate-800 overflow-x-auto no-scrollbar shrink-0 h-10">
-            <Tab name="MainActivity.kt" active type="kt" />
-            <Tab name="activity_main.xml" type="xml" />
+          {/* Chat Messages Area */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`
+                  max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm
+                  ${msg.role === 'user' 
+                    ? 'bg-blue-600 text-white rounded-tr-sm' 
+                    : 'bg-slate-800 text-slate-200 rounded-tl-sm border border-slate-700'}
+                `}>
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {/* Invisible div to scroll to bottom */}
+            <div className="h-4" /> 
           </div>
 
-          {/* Editor Content (Scrollable) */}
-          <div className="flex-1 p-4 md:p-8 overflow-auto custom-scrollbar">
-             <div className="font-mono text-sm leading-relaxed whitespace-pre font-medium pb-20">
-               <span className="text-purple-400">package</span> {project?.packageName || "com.example.app"}<br/><br/>
-               <span className="text-purple-400">import</span> android.os.Bundle<br/>
-               <span className="text-purple-400">import</span> androidx.activity.ComponentActivity<br/><br/>
-               <span className="text-blue-400">class</span> <span className="text-yellow-400">MainActivity</span> : <span className="text-yellow-400">ComponentActivity</span>() {'{'}<br/>
-               &nbsp;&nbsp;<span className="text-blue-400">override fun</span> <span className="text-yellow-400">onCreate</span>(savedInstanceState: Bundle?) {'{'}<br/>
-               &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">super</span>.onCreate(savedInstanceState)<br/>
-               &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-slate-500">// AI Prompt: {project?.description || "No description"}</span><br/>
-               &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-slate-500">// TODO: Implement main screen logic</span><br/>
-               &nbsp;&nbsp;&nbsp;&nbsp;setContentView(R.layout.activity_main)<br/>
-               &nbsp;&nbsp;{'}'}<br/>
-               {'}'}
-             </div>
+          {/* Chat Input Area (Fixed Bottom) */}
+          <div className="p-3 bg-slate-900 border-t border-slate-800 shrink-0">
+            <form onSubmit={handleSendMessage} className="relative flex items-center gap-2">
+              <button type="button" className="p-3 text-slate-400 hover:text-white bg-slate-800 rounded-xl transition-colors">
+                <Code2 className="w-5 h-5" />
+              </button>
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Describe your app..."
+                className="flex-1 bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-all placeholder:text-slate-600"
+              />
+              <button 
+                type="submit" 
+                disabled={!inputValue.trim()}
+                className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 transition-all"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </form>
           </div>
         </main>
 
 
-        {/* 3. RIGHT SIDEBAR (AI Assistant) */}
-        {rightSidebarOpen && (
-          <aside className="absolute md:relative right-0 h-full w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-40 shadow-2xl md:shadow-none">
-            
-            <div className="p-4 border-b border-slate-800 bg-slate-900 flex justify-between items-center h-12 shrink-0">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
-                AI Architect
-              </h3>
-              <button onClick={() => setRightSidebarOpen(false)} className="md:hidden text-slate-400">
-                <X className="w-4 h-4"/>
-              </button>
+        {/* === RIGHT SIDEBAR: PREVIEW (Toggled by Play Btn) === */}
+        {/* Slides in from the right */}
+        <aside 
+          className={`
+            absolute top-0 bottom-0 right-0 z-50 w-full md:w-[400px] bg-slate-900 border-l border-slate-800 shadow-2xl transition-transform duration-300 ease-in-out flex flex-col
+            ${rightOpen ? 'translate-x-0' : 'translate-x-full'}
+          `}
+        >
+          {/* Preview Header */}
+          <div className="h-14 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900 shrink-0">
+            <div className="flex items-center gap-2">
+               <span className="flex h-2 w-2 rounded-full bg-red-500" />
+               <span className="flex h-2 w-2 rounded-full bg-yellow-500" />
+               <span className="flex h-2 w-2 rounded-full bg-green-500" />
             </div>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Device Preview</span>
+            <button onClick={() => setRightOpen(false)} className="text-slate-400 hover:text-white bg-slate-800 p-1 rounded-md">
+              <X className="w-5 h-5"/>
+            </button>
+          </div>
 
-            {/* CHAT SCROLL AREA */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar">
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4 text-purple-400" />
-                </div>
-                <div className="bg-slate-800 rounded-2xl rounded-tl-none p-3 text-sm text-slate-300 border border-slate-700">
-                  Project <strong>{project?.name || "App"}</strong> initialized. <br/>
-                  I can edit files, fix errors, or generate new features. What's next?
-                </div>
+          {/* Preview Content (The Phone) */}
+          <div className="flex-1 bg-slate-950 p-6 flex items-center justify-center overflow-y-auto">
+            <div className="w-[300px] h-[600px] bg-black rounded-[3rem] border-8 border-slate-800 shadow-2xl relative overflow-hidden flex flex-col">
+              
+              {/* Phone Notch */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-800 rounded-b-xl z-20"></div>
+              
+              {/* Phone Screen (Iframe or Mock UI) */}
+              <div className="flex-1 bg-white flex flex-col relative z-10 w-full h-full pt-8">
+                 {/* This is where the generated app shows up */}
+                 <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+                    <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4">
+                       <Smartphone className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl mb-2">Hello World</h3>
+                    <p className="text-slate-500 text-sm">
+                      This is a live preview of your generated Android layout.
+                    </p>
+                    <button className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-full font-bold shadow-lg w-full">
+                       Click Me
+                    </button>
+                 </div>
               </div>
             </div>
-
-            {/* INPUT AREA (Fixed at bottom) */}
-            <div className="p-4 border-t border-slate-800 bg-slate-900 shrink-0 pb-safe">
-              <div className="relative">
-                <input 
-                  type="text" 
-                  placeholder="Ask AI to edit code..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-                />
-                <button className="absolute right-2 top-2 p-1 text-slate-400 hover:text-white">
-                  <Share2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </aside>
-        )}
+          </div>
+          
+          {/* Bottom Toolbar for Preview */}
+          <div className="h-12 border-t border-slate-800 bg-slate-900 flex items-center justify-around text-slate-400">
+             <button className="hover:text-white"><Monitor className="w-5 h-5"/></button>
+             <button className="hover:text-white"><Code2 className="w-5 h-5"/></button>
+             <button className="hover:text-white"><Settings className="w-5 h-5"/></button>
+          </div>
+        </aside>
 
       </div>
     </div>
   );
 }
 
-// --- SUB-COMPONENTS ---
-
-function FileItem({ name, type, isOpen, active, icon }) {
+// --- DUMMY FILE TREE COMPONENT ---
+function FileTree() {
   return (
-    <div className={`
-      flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors select-none
-      ${active ? 'bg-blue-600/10 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
-    `}>
-      {type === 'folder' ? (
-        <Folder className={`w-4 h-4 ${isOpen ? 'text-slate-200' : 'text-slate-500'}`} />
-      ) : (
-        icon || <Code2 className="w-4 h-4 text-slate-500" />
-      )}
-      <span className="truncate">{name}</span>
+    <div className="space-y-1 font-mono text-sm">
+      <FileItem name="app" type="folder" isOpen={true}>
+        <FileItem name="src" type="folder" isOpen={true}>
+          <FileItem name="main" type="folder" isOpen={true}>
+            <FileItem name="java" type="folder">
+              <FileItem name="MainActivity.kt" type="file" ext="kt" />
+            </FileItem>
+            <FileItem name="res" type="folder">
+              <FileItem name="layout" type="folder">
+                <FileItem name="activity_main.xml" type="file" ext="xml" />
+              </FileItem>
+            </FileItem>
+          </FileItem>
+        </FileItem>
+      </FileItem>
+      <FileItem name="build.gradle" type="file" ext="gradle" />
     </div>
   );
 }
 
-function Tab({ name, active, type }) {
-  const isKt = type === 'kt';
+function FileItem({ name, type, isOpen: defaultOpen, children, ext }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
+  // Icon Logic
+  let Icon = Folder;
+  let color = "text-slate-500";
+  if (type === 'file') {
+    Icon = FileCode;
+    if (ext === 'kt') color = "text-blue-400";
+    if (ext === 'xml') color = "text-orange-400";
+    if (ext === 'gradle') color = "text-slate-400";
+  }
+
   return (
-    <div className={`
-      px-4 py-2.5 text-xs font-medium border-r border-slate-800 cursor-pointer flex items-center gap-2 select-none whitespace-nowrap h-full
-      ${active ? 'bg-[#0f172a] text-white border-t-2 border-t-blue-500' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300 bg-slate-900'}
-    `}>
-      <span className={isKt ? "text-blue-400" : "text-orange-400"}>
-        {isKt ? "Kt" : "Xml"}
-      </span>
-      {name}
-      {active && <X className="w-3 h-3 ml-2 hover:text-red-400" />}
+    <div className="select-none">
+      <div 
+        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-slate-800 transition-colors ${type === 'folder' ? 'text-slate-300' : 'text-slate-400'}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="opacity-50 w-4 flex justify-center">
+          {type === 'folder' && <ChevronRight className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} />}
+        </span>
+        <Icon className={`w-4 h-4 ${color}`} />
+        <span className="truncate">{name}</span>
+      </div>
+      {isOpen && children && (
+        <div className="pl-4 border-l border-slate-800 ml-2.5">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
