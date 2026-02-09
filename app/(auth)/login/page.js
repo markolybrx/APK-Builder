@@ -4,11 +4,9 @@ import { signIn } from "next-auth/react";
 import { Github, Chrome, ArrowLeft, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (provider) => {
     setIsLoading(true);
@@ -16,9 +14,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0f172a] px-4">
+    // VISUAL FIX: Solid background, no "blobs" or gradients that create strips
+    <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 px-4">
       
-      {/* Main Card - Clean, No Background Blobs, High Z-Index */}
+      {/* Main Card */}
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl z-50">
 
         <Link href="/" className="inline-flex items-center text-slate-400 hover:text-white mb-8 text-sm transition-colors">
@@ -64,10 +63,10 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* DEV BYPASS BUTTON */}
+          {/* BYPASS BUTTON - Uses Hard Navigation to force entry */}
           <button
             type="button"
-            onClick={() => router.push("/dashboard")}
+            onClick={() => window.location.href = "/dashboard"} 
             className="w-full flex items-center justify-center gap-2 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border border-yellow-500/20 font-bold py-3 rounded-xl transition-all"
           >
             <ShieldAlert className="w-5 h-5" />
