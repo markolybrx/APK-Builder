@@ -1,9 +1,9 @@
 import { 
   MessageSquare, Folder, Smartphone, Terminal, 
-  Clock, Settings, LogOut 
+  Clock, Settings, ArrowLeftFromLine 
 } from "lucide-react";
 
-export default function NavigationRail({ activeView, setActiveView, triggerHaptic }) {
+export default function NavigationRail({ activeView, setActiveView, onExit, triggerHaptic }) {
   
   const navItems = [
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
@@ -40,9 +40,14 @@ export default function NavigationRail({ activeView, setActiveView, triggerHapti
       </div>
 
       {/* Bottom Actions */}
-      <div className="mt-auto">
-         <button className="p-3 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-xl transition-colors">
-            <LogOut className="w-5 h-5" />
+      <div className="mt-auto w-full px-2">
+         <button 
+            onClick={onExit}
+            className="w-full flex flex-col items-center justify-center p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors aspect-square"
+            title="Exit Project"
+         >
+            <ArrowLeftFromLine className="w-5 h-5" />
+            <span className="text-[9px] font-bold mt-1">Exit</span>
          </button>
       </div>
     </nav>
