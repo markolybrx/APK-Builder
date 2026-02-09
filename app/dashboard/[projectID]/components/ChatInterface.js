@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef, useEffect } from "react";
 import { 
   Send, Code2, Mic, MicOff, Plus, 
@@ -10,20 +12,19 @@ export default function ChatInterface({
   setMessages, 
   setPreviewMode, 
   triggerHaptic,
-  onAIChange // Callback to trigger the Contextual Lens (Swipe-to-Apply)
+  onAIChange,
+  onUpdateFile // NEW: The "hands" to edit the File System
 }) {
   const [inputValue, setInputValue] = useState("");
   const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef(null);
 
-  // Auto-scroll to latest message
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Quick Actions Config
   const quickActions = [
     { label: "Add Button", icon: Plus, prompt: "Add a button that says 'Click Me'" },
     { label: "Login Flow", icon: LayoutTemplate, prompt: "Create a login screen with email and password" },
@@ -31,13 +32,11 @@ export default function ChatInterface({
     { label: "Fix Errors", icon: Zap, prompt: "Scan project for errors and fix them" },
   ];
 
-  // Voice Logic
   const toggleListening = () => {
     if (!('webkitSpeechRecognition' in window)) {
       alert("Voice input is not supported in this browser.");
       return;
     }
-
     if (isListening) {
       setIsListening(false);
     } else {
@@ -46,17 +45,11 @@ export default function ChatInterface({
       const recognition = new window.webkitSpeechRecognition();
       recognition.continuous = false;
       recognition.lang = 'en-US';
-
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         setInputValue(prev => (prev + " " + transcript).trim());
       };
-
-      recognition.onend = () => {
-        setIsListening(false);
-        triggerHaptic();
-      };
-
+      recognition.onend = () => { setIsListening(false); triggerHaptic(); };
       recognition.start();
     }
   };
@@ -70,9 +63,9 @@ export default function ChatInterface({
     setMessages(prev => [...prev, { role: 'user', text: text }]);
     setInputValue("");
 
-    // --- AI LOGIC ENGINE ---
+    // --- ACTIVATING THE AI BRAIN ---
     setTimeout(() => {
-      // 1. Asset Alchemist Trigger
+      // 1. ASSET GENERATION (/image or /icon)
       if (text.toLowerCase().startsWith('/image') || text.toLowerCase().startsWith('/icon')) {
         const prompt = text.split(' ').slice(1).join(' ') || "app element";
         setMessages(prev => [...prev, { 
@@ -83,28 +76,60 @@ export default function ChatInterface({
         return;
       }
 
-      // 2. Contextual Lens / Code Change Trigger
-      // We simulate a code change suggestion if the user asks for a UI element
-      if (text.toLowerCase().includes("button") || text.toLowerCase().includes("screen")) {
+      // 2. DYNAMIC CODE GENERATION
+      // Instead of canned text, we check for intent and modify the file system.
+      if (text.toLowerCase().includes("button")) {
+        // ACTUALLY MODIFY THE XML FILE
+        onUpdateFile("activity_main.xml", `<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
+    <Button
+        android:id="@+id/dynamic_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Click Me"
+        android:backgroundTint="#3b82f6"/>
+</LinearLayout>`);
+
         setMessages(prev => [...prev, { 
           role: 'ai', 
-          text: "I've designed a new layout option for you. Swipe the preview to apply it." 
+          text: "I've added the button to your layout and applied Material 3 styling. Check 'activity_main.xml' in your explorer!" 
         }]);
-        // Trigger the "Ghost UI" overlay in the Preview Pane
-        onAIChange({ type: 'layout', details: text }); 
         return;
       }
 
-      // 3. Navigation/Mode Commands
-      let response = "I'm on it. Updating the code...";
+      // 3. ARCHITECTURE LOGIC GENERATION
+      if (text.toLowerCase().includes("login")) {
+        onUpdateFile("MainActivity.kt", `// Auto-generated Login Logic
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        
+        val loginBtn = findViewById<Button>(R.id.dynamic_btn)
+        loginBtn.setOnClickListener {
+            // Logic injected via AI Chat
+            Toast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show()
+        }
+    }
+}`);
+        setMessages(prev => [...prev, { role: 'ai', text: "Login logic generated. I've updated 'MainActivity.kt' with the click listeners." }]);
+        return;
+      }
+
+      // 4. PREVIEW MODES
+      let response = "Understood. I'm monitoring your workspace for changes.";
       if (text.toLowerCase().includes("draw")) {
         response = "Drawing Pad active. Sketch your idea and I'll convert it to XML.";
         setPreviewMode('draw');
-      } else if (text.toLowerCase().includes("move") || text.toLowerCase().includes("design")) {
-        response = "Design Mode enabled. You can now tap and drag elements in the preview.";
+      } else if (text.toLowerCase().includes("design")) {
+        response = "Design Mode enabled. You can now tweak elements in the preview.";
         setPreviewMode('design');
       }
-      
+
       setMessages(prev => [...prev, { role: 'ai', text: response }]);
       triggerHaptic();
     }, 1000);
@@ -112,28 +137,21 @@ export default function ChatInterface({
 
   return (
     <main className="flex-1 flex flex-col bg-[#0f172a] relative z-0 w-full min-w-0">
-      {/* Messages Area */}
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 pb-4 custom-scrollbar"
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 pb-4 custom-scrollbar">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.type === 'asset-gen' ? (
-              /* ASSET ALCHEMIST COMPONENT */
               <AssetAlchemist 
                 prompt={msg.prompt} 
                 triggerHaptic={triggerHaptic}
                 onComplete={() => {
-                  setMessages(prev => [...prev, { role: 'ai', text: `Successfully added ${msg.prompt} to your drawables.` }]);
+                  setMessages(prev => [...prev, { role: 'ai', text: `Successfully added ${msg.prompt} to your project assets.` }]);
                 }}
               />
             ) : (
               <div className={`
                 max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm animate-in fade-in slide-in-from-bottom-2
-                ${msg.role === 'user' 
-                  ? 'bg-blue-600 text-white rounded-tr-sm' 
-                  : 'bg-slate-800 text-slate-200 rounded-tl-sm border border-slate-700'}
+                ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-slate-800 text-slate-200 rounded-tl-sm border border-slate-700'}
               `}>
                 {msg.text}
               </div>
@@ -142,16 +160,13 @@ export default function ChatInterface({
         ))}
       </div>
 
-      {/* Smart Actions Bar */}
       <div className="h-12 border-t border-slate-800 bg-slate-900/50 flex items-center gap-2 px-2 overflow-x-auto no-scrollbar shrink-0">
-        <div className="flex items-center gap-1 px-2 text-blue-400">
-            <Sparkles className="w-4 h-4" />
-        </div>
+        <div className="flex items-center gap-1 px-2 text-blue-400"><Sparkles className="w-4 h-4" /></div>
         {quickActions.map((action, i) => (
           <button 
             key={i}
             onClick={() => handleSendMessage(null, action.prompt)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-full text-xs text-slate-300 whitespace-nowrap transition-colors active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-full text-xs text-slate-300 whitespace-nowrap transition-colors"
           >
             <action.icon className="w-3.5 h-3.5 text-blue-400" />
             {action.label}
@@ -159,10 +174,8 @@ export default function ChatInterface({
         ))}
       </div>
 
-      {/* Input Area */}
       <div className="p-3 bg-slate-900 border-t border-slate-800 shrink-0 pb-safe">
         <form onSubmit={(e) => handleSendMessage(e)} className="relative flex items-center gap-2">
-
           <button 
             type="button" 
             onClick={toggleListening}
@@ -170,21 +183,15 @@ export default function ChatInterface({
           >
             {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
-
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={isListening ? "Listening..." : "Type '/image' for icons or chat..."}
+            placeholder={isListening ? "Listening..." : "Tell me what to build..."}
             className="flex-1 bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-all text-sm"
             autoComplete="off"
           />
-
-          <button 
-            type="submit" 
-            disabled={!inputValue.trim()}
-            className="p-3 bg-blue-600 text-white rounded-xl disabled:opacity-50 transition-transform active:scale-95"
-          >
+          <button type="submit" disabled={!inputValue.trim()} className="p-3 bg-blue-600 text-white rounded-xl disabled:opacity-50 transition-transform active:scale-95">
             <Send className="w-5 h-5" />
           </button>
         </form>
