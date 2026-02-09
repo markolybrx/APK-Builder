@@ -15,10 +15,10 @@ export default function NavigationRail({ activeView, setActiveView, onExit, trig
   ];
 
   return (
-    <nav className="w-16 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-4 shrink-0 z-50">
+    <nav className="w-16 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-4 shrink-0 z-40">
       
       {/* Top Icons */}
-      <div className="flex-1 flex flex-col gap-4 w-full px-2">
+      <div className="flex-1 flex flex-col gap-3 w-full px-2">
         {navItems.map((item) => {
           const isActive = activeView === item.id;
           return (
