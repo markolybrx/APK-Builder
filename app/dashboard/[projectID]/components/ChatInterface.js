@@ -1,9 +1,27 @@
-import { useState } from "react";
-import { Send, Code2, Mic, MicOff, Plus, LayoutTemplate, Palette, Zap } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { 
+  Send, Code2, Mic, MicOff, Plus, 
+  LayoutTemplate, Palette, Zap, Sparkles 
+} from "lucide-react";
+import AssetAlchemist from "./AssetAlchemist";
 
-export default function ChatInterface({ messages, setMessages, setPreviewMode, setRightOpen, triggerHaptic }) {
+export default function ChatInterface({ 
+  messages, 
+  setMessages, 
+  setPreviewMode, 
+  triggerHaptic,
+  onAIChange // Callback to trigger the Contextual Lens (Swipe-to-Apply)
+}) {
   const [inputValue, setInputValue] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const scrollRef = useRef(null);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   // Quick Actions Config
   const quickActions = [
@@ -33,7 +51,7 @@ export default function ChatInterface({ messages, setMessages, setPreviewMode, s
         const transcript = event.results[0][0].transcript;
         setInputValue(prev => (prev + " " + transcript).trim());
       };
-      
+
       recognition.onend = () => {
         setIsListening(false);
         triggerHaptic();
@@ -47,23 +65,46 @@ export default function ChatInterface({ messages, setMessages, setPreviewMode, s
     if (e) e.preventDefault();
     const text = textOverride || inputValue;
     if (!text.trim()) return;
-    
+
     triggerHaptic();
     setMessages(prev => [...prev, { role: 'user', text: text }]);
     setInputValue("");
-    
-    // Simulate AI Response
+
+    // --- AI LOGIC ENGINE ---
     setTimeout(() => {
+      // 1. Asset Alchemist Trigger
+      if (text.toLowerCase().startsWith('/image') || text.toLowerCase().startsWith('/icon')) {
+        const prompt = text.split(' ').slice(1).join(' ') || "app element";
+        setMessages(prev => [...prev, { 
+          role: 'ai', 
+          type: 'asset-gen', 
+          prompt: prompt 
+        }]);
+        return;
+      }
+
+      // 2. Contextual Lens / Code Change Trigger
+      // We simulate a code change suggestion if the user asks for a UI element
+      if (text.toLowerCase().includes("button") || text.toLowerCase().includes("screen")) {
+        setMessages(prev => [...prev, { 
+          role: 'ai', 
+          text: "I've designed a new layout option for you. Swipe the preview to apply it." 
+        }]);
+        // Trigger the "Ghost UI" overlay in the Preview Pane
+        onAIChange({ type: 'layout', details: text }); 
+        return;
+      }
+
+      // 3. Navigation/Mode Commands
       let response = "I'm on it. Updating the code...";
       if (text.toLowerCase().includes("draw")) {
-        response = "I see your drawing! Converting to XML...";
-        setPreviewMode('ar');
-        setRightOpen(true);
-      } else if (text.toLowerCase().includes("move")) {
-        response = "Design Mode enabled. Drag elements to rearrange.";
+        response = "Drawing Pad active. Sketch your idea and I'll convert it to XML.";
+        setPreviewMode('draw');
+      } else if (text.toLowerCase().includes("move") || text.toLowerCase().includes("design")) {
+        response = "Design Mode enabled. You can now tap and drag elements in the preview.";
         setPreviewMode('design');
-        setRightOpen(true);
       }
+      
       setMessages(prev => [...prev, { role: 'ai', text: response }]);
       triggerHaptic();
     }, 1000);
@@ -71,24 +112,41 @@ export default function ChatInterface({ messages, setMessages, setPreviewMode, s
 
   return (
     <main className="flex-1 flex flex-col bg-[#0f172a] relative z-0 w-full min-w-0">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-4 custom-scrollbar">
+      {/* Messages Area */}
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 pb-4 custom-scrollbar"
+      >
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`
-              max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm animate-in fade-in slide-in-from-bottom-2
-              ${msg.role === 'user' 
-                ? 'bg-blue-600 text-white rounded-tr-sm' 
-                : 'bg-slate-800 text-slate-200 rounded-tl-sm border border-slate-700'}
-            `}>
-              {msg.text}
-            </div>
+            {msg.type === 'asset-gen' ? (
+              /* ASSET ALCHEMIST COMPONENT */
+              <AssetAlchemist 
+                prompt={msg.prompt} 
+                triggerHaptic={triggerHaptic}
+                onComplete={() => {
+                  setMessages(prev => [...prev, { role: 'ai', text: `Successfully added ${msg.prompt} to your drawables.` }]);
+                }}
+              />
+            ) : (
+              <div className={`
+                max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm animate-in fade-in slide-in-from-bottom-2
+                ${msg.role === 'user' 
+                  ? 'bg-blue-600 text-white rounded-tr-sm' 
+                  : 'bg-slate-800 text-slate-200 rounded-tl-sm border border-slate-700'}
+              `}>
+                {msg.text}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Smart Actions */}
+      {/* Smart Actions Bar */}
       <div className="h-12 border-t border-slate-800 bg-slate-900/50 flex items-center gap-2 px-2 overflow-x-auto no-scrollbar shrink-0">
+        <div className="flex items-center gap-1 px-2 text-blue-400">
+            <Sparkles className="w-4 h-4" />
+        </div>
         {quickActions.map((action, i) => (
           <button 
             key={i}
@@ -104,7 +162,7 @@ export default function ChatInterface({ messages, setMessages, setPreviewMode, s
       {/* Input Area */}
       <div className="p-3 bg-slate-900 border-t border-slate-800 shrink-0 pb-safe">
         <form onSubmit={(e) => handleSendMessage(e)} className="relative flex items-center gap-2">
-          
+
           <button 
             type="button" 
             onClick={toggleListening}
@@ -117,10 +175,11 @@ export default function ChatInterface({ messages, setMessages, setPreviewMode, s
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={isListening ? "Listening..." : "Type or speak..."}
+            placeholder={isListening ? "Listening..." : "Type '/image' for icons or chat..."}
             className="flex-1 bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-all text-sm"
+            autoComplete="off"
           />
-          
+
           <button 
             type="submit" 
             disabled={!inputValue.trim()}
