@@ -11,8 +11,9 @@ export default function LogicMapView({ projectFiles, triggerHaptic, onLogicUpdat
   // --- REAL-TIME PARSER ---
   // We use useMemo to derive nodes directly from the VFS
   const dynamicNodes = useMemo(() => {
-    return projectFiles
-      .filter(f => f.name.endsWith('.xml') || f.name.endsWith('.kt'))
+  if (!projectFiles || !Array.isArray(projectFiles)) return []; // Safety check
+  return projectFiles
+    .filter(f => f && (f.name.endsWith('.xml') || f.name.endsWith('.kt')))
       .map((file, idx) => {
         // Extract IDs from XML files to show real buttons as ports
         const idMatches = file.content.match(/android:id="\@\+id\/([^"]+)"/g) || [];
