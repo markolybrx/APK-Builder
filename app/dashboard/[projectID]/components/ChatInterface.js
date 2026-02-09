@@ -13,7 +13,7 @@ export default function ChatInterface({
   setPreviewMode, 
   triggerHaptic,
   onAIChange,
-  onUpdateFile // NEW: The "hands" to edit the File System
+  onUpdateFile 
 }) {
   const [inputValue, setInputValue] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -63,23 +63,14 @@ export default function ChatInterface({
     setMessages(prev => [...prev, { role: 'user', text: text }]);
     setInputValue("");
 
-    // --- ACTIVATING THE AI BRAIN ---
     setTimeout(() => {
-      // 1. ASSET GENERATION (/image or /icon)
       if (text.toLowerCase().startsWith('/image') || text.toLowerCase().startsWith('/icon')) {
         const prompt = text.split(' ').slice(1).join(' ') || "app element";
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          type: 'asset-gen', 
-          prompt: prompt 
-        }]);
+        setMessages(prev => [...prev, { role: 'ai', type: 'asset-gen', prompt: prompt }]);
         return;
       }
 
-      // 2. DYNAMIC CODE GENERATION
-      // Instead of canned text, we check for intent and modify the file system.
       if (text.toLowerCase().includes("button")) {
-        // ACTUALLY MODIFY THE XML FILE
         onUpdateFile("activity_main.xml", `<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -93,15 +84,10 @@ export default function ChatInterface({
         android:text="Click Me"
         android:backgroundTint="#3b82f6"/>
 </LinearLayout>`);
-
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          text: "I've added the button to your layout and applied Material 3 styling. Check 'activity_main.xml' in your explorer!" 
-        }]);
+        setMessages(prev => [...prev, { role: 'ai', text: "I've added the button to your layout and applied Material 3 styling. Check 'activity_main.xml' in your explorer!" }]);
         return;
       }
 
-      // 3. ARCHITECTURE LOGIC GENERATION
       if (text.toLowerCase().includes("login")) {
         onUpdateFile("MainActivity.kt", `// Auto-generated Login Logic
 class MainActivity : AppCompatActivity() {
@@ -111,7 +97,6 @@ class MainActivity : AppCompatActivity() {
         
         val loginBtn = findViewById<Button>(R.id.dynamic_btn)
         loginBtn.setOnClickListener {
-            // Logic injected via AI Chat
             Toast.makeText(this, "Logging in...", Toast.LENGTH_SHORT).show()
         }
     }
@@ -120,7 +105,6 @@ class MainActivity : AppCompatActivity() {
         return;
       }
 
-      // 4. PREVIEW MODES
       let response = "Understood. I'm monitoring your workspace for changes.";
       if (text.toLowerCase().includes("draw")) {
         response = "Drawing Pad active. Sketch your idea and I'll convert it to XML.";
@@ -136,8 +120,13 @@ class MainActivity : AppCompatActivity() {
   };
 
   return (
-    <main className="flex-1 flex flex-col bg-[#0f172a] relative z-0 w-full min-w-0">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 pb-4 custom-scrollbar">
+    <div className="flex flex-col h-full w-full bg-[#0f172a] overflow-hidden">
+      
+      {/* 1. SCROLLABLE MESSAGES ZONE */}
+      <div 
+        ref={scrollRef} 
+        className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
+      >
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.type === 'asset-gen' ? (
@@ -160,42 +149,48 @@ class MainActivity : AppCompatActivity() {
         ))}
       </div>
 
-      <div className="h-12 border-t border-slate-800 bg-slate-900/50 flex items-center gap-2 px-2 overflow-x-auto no-scrollbar shrink-0">
-        <div className="flex items-center gap-1 px-2 text-blue-400"><Sparkles className="w-4 h-4" /></div>
-        {quickActions.map((action, i) => (
-          <button 
-            key={i}
-            onClick={() => handleSendMessage(null, action.prompt)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-full text-xs text-slate-300 whitespace-nowrap transition-colors"
-          >
-            <action.icon className="w-3.5 h-3.5 text-blue-400" />
-            {action.label}
-          </button>
-        ))}
-      </div>
+      {/* 2. PINNED BOTTOM INTERFACE (Non-scrollable) */}
+      <div className="shrink-0 bg-[#0f172a] border-t border-slate-800/50">
+        
+        {/* Smart Actions Bar */}
+        <div className="h-12 flex items-center gap-2 px-2 overflow-x-auto no-scrollbar bg-slate-900/30">
+          <div className="flex items-center gap-1 px-2 text-blue-400"><Sparkles className="w-4 h-4" /></div>
+          {quickActions.map((action, i) => (
+            <button 
+              key={i}
+              onClick={() => handleSendMessage(null, action.prompt)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 rounded-full text-[10px] font-bold text-slate-300 whitespace-nowrap transition-all active:scale-95"
+            >
+              <action.icon className="w-3 h-3 text-blue-400" />
+              {action.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="p-3 bg-slate-900 border-t border-slate-800 shrink-0 pb-safe">
-        <form onSubmit={(e) => handleSendMessage(e)} className="relative flex items-center gap-2">
-          <button 
-            type="button" 
-            onClick={toggleListening}
-            className={`p-3 rounded-xl transition-all ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-          >
-            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-          </button>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder={isListening ? "Listening..." : "Tell me what to build..."}
-            className="flex-1 bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-all text-sm"
-            autoComplete="off"
-          />
-          <button type="submit" disabled={!inputValue.trim()} className="p-3 bg-blue-600 text-white rounded-xl disabled:opacity-50 transition-transform active:scale-95">
-            <Send className="w-5 h-5" />
-          </button>
-        </form>
+        {/* Input Area */}
+        <div className="p-3 pb-safe bg-slate-900/80 backdrop-blur-md">
+          <form onSubmit={(e) => handleSendMessage(e)} className="relative flex items-center gap-2">
+            <button 
+              type="button" 
+              onClick={toggleListening}
+              className={`p-3 rounded-xl transition-all ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+            >
+              {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={isListening ? "Listening..." : "Tell me what to build..."}
+              className="flex-1 bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-all text-sm"
+              autoComplete="off"
+            />
+            <button type="submit" disabled={!inputValue.trim()} className="p-3 bg-blue-600 text-white rounded-xl disabled:opacity-50 transition-transform active:scale-95">
+              <Send className="w-5 h-5" />
+            </button>
+          </form>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
