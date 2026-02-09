@@ -35,6 +35,7 @@ export default function Terminal({ project, triggerHaptic }) {
     "~": ["project", ".bashrc"]
   });
 
+  // Auto-scroll logic for history
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -43,21 +44,14 @@ export default function Terminal({ project, triggerHaptic }) {
 
   const handleContainerClick = () => inputRef.current?.focus();
 
-  // --- REAL-TIME BUILD SIMULATOR ---
   const simulateBuild = async () => {
     const buildSteps = [
       { t: 'info', c: '> Task :app:preBuild UP-TO-DATE' },
       { t: 'info', c: '> Task :app:compileDebugKotlin' },
-      { t: 'info', c: 'Analyzing MainActivity.kt...' },
       { t: 'success', c: 'Kotlin compilation successful.' },
       { t: 'info', c: '> Task :app:mergeDebugResources' },
-      { t: 'info', c: 'Merging XML layouts from res/layout...' },
-      { t: 'info', c: '> Task :app:processDebugMainManifest' },
-      { t: 'info', c: '> Task :app:dexBuilderDebug' },
-      { t: 'warning', c: 'Expiring Daemon because JVM heap space is exhausted...' },
       { t: 'info', c: '> Task :app:packageDebug' },
       { t: 'success', c: 'BUILD SUCCESSFUL in 4s' },
-      { t: 'success', c: 'APK generated: ~/project/build/outputs/apk/debug/app-debug.apk' },
     ];
 
     for (const step of buildSteps) {
@@ -69,7 +63,6 @@ export default function Terminal({ project, triggerHaptic }) {
 
   const processCommand = async (rawCmd) => {
     if (!rawCmd.trim()) return;
-
     setHistory(prev => [...prev, { type: 'user', content: rawCmd, path: currentPath }]);
     setCmdHistory(prev => [rawCmd, ...prev]);
     setHistoryIndex(-1);
@@ -83,62 +76,30 @@ export default function Terminal({ project, triggerHaptic }) {
     await new Promise(r => setTimeout(r, 100));
 
     let output = [];
-
     switch (cmd) {
-      case 'help':
-        output = [
-          { type: 'success', content: 'AppBuild AI Build Shell - Core Commands:' },
-          { type: 'info', content: '  Build:   gradle build, gradlew, npm run build' },
-          { type: 'info', content: '  Files:   ls, cd, pwd, cat, rm, touch' },
-          { type: 'info', content: '  System:  clear, whoami, top, date' },
-        ];
-        break;
-
-      case 'ls':
-        output = [{ type: 'info', content: (fileSystem[currentPath] || []).join('   ') }];
-        break;
-
-      case 'pwd':
-        output = [{ type: 'info', content: currentPath.replace('~', '/home/user') }];
-        break;
-
-      case 'gradle':
-      case './gradlew':
-      case 'build':
-        if (param === 'build' || cmd === 'build') {
-          await simulateBuild();
-          return;
-        }
-        output = [{ type: 'info', content: 'Gradle 8.0.2 active. Use "gradle build" to compile.' }];
-        break;
-
-      case 'npm':
-        if (param === 'start' || param === 'run') {
-           setHistory(prev => [...prev, { type: 'success', content: '> Initializing Android Emulator Bridge...' }]);
-           await new Promise(r => setTimeout(r, 1000));
-           output = [{ type: 'success', content: 'Server running at http://localhost:8081' }];
-        } else {
-           output = [{ type: 'info', content: 'npm v9.6.7' }];
-        }
-        break;
-
       case 'clear':
       case 'cls':
         setHistory([]);
         return;
-
+      case 'help':
+        output = [{ type: 'success', content: 'Available: build, ls, cd, pwd, clear, whoami' }];
+        break;
+      case 'build':
+      case 'gradlew':
+        await simulateBuild();
+        return;
+      case 'ls':
+        output = [{ type: 'info', content: (fileSystem[currentPath] || []).join('   ') }];
+        break;
+      case 'pwd':
+        output = [{ type: 'info', content: currentPath.replace('~', '/home/user') }];
+        break;
       case 'whoami':
         output = [{ type: 'info', content: 'visionary_dev' }];
         break;
-
-      case 'top':
-        output = [{ type: 'info', content: 'Tasks: 16 total, 1 running\nCPU: 2.1% used | RAM: 1.4GB / 8GB' }];
-        break;
-
       default:
         output = [{ type: 'error', content: `bash: ${cmd}: command not found` }];
     }
-
     setHistory(prev => [...prev, ...output]);
   };
 
@@ -166,10 +127,10 @@ export default function Terminal({ project, triggerHaptic }) {
   };
 
   return (
-    <div className={`flex flex-col h-full w-full bg-[#020617] text-slate-300 font-mono text-[11px] border-t border-slate-800 ${isMaximized ? 'fixed inset-0 z-[300]' : 'relative'}`}>
-      
-      {/* TERMINAL HEADER */}
-      <div className="h-9 border-b border-slate-800 flex items-center justify-between px-3 bg-slate-900/50 shrink-0">
+    <div className={`flex flex-col h-full w-full bg-[#020617] text-slate-300 font-mono text-[11px] border-t border-slate-800 overflow-hidden ${isMaximized ? 'fixed inset-0 z-[300]' : 'relative'}`}>
+
+      {/* 1. PINNED HEADER (Shrink-0) */}
+      <div className="h-9 border-b border-slate-800 flex items-center justify-between px-3 bg-slate-900 shrink-0 z-10">
         <div className="flex items-center gap-2">
            <div className="flex gap-1.5 mr-2">
               <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/40" />
@@ -180,21 +141,22 @@ export default function Terminal({ project, triggerHaptic }) {
              <Cpu className="w-3 h-3" /> build-node-01@{projectName}
            </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+            <button onClick={() => setHistory([])} className="p-1 hover:bg-slate-800 rounded text-slate-500"><Trash2 className="w-3 h-3" /></button>
             <button onClick={() => setIsMaximized(!isMaximized)} className="p-1 hover:bg-slate-800 rounded">
                 {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </button>
         </div>
       </div>
 
-      {/* TERMINAL CANVAS */}
+      {/* 2. SCROLLABLE LOG ZONE */}
       <div 
-        className="flex-1 overflow-y-auto p-4 custom-scrollbar selection:bg-blue-500/30" 
-        onClick={handleContainerClick}
         ref={scrollRef}
+        className="flex-1 overflow-y-auto p-4 custom-scrollbar selection:bg-blue-500/30 bg-[#020617]/50" 
+        onClick={handleContainerClick}
       >
         {history.map((line, i) => (
-            <div key={i} className="mb-1.5 leading-relaxed animate-in fade-in duration-300">
+            <div key={i} className="mb-1.5 leading-relaxed animate-in fade-in duration-200">
                 {line.type === 'user' && (
                     <div className="flex gap-2 text-white font-bold mt-2">
                         <span className="text-blue-500">➜</span>
@@ -209,10 +171,13 @@ export default function Terminal({ project, triggerHaptic }) {
                 {line.type === 'error' && <div className="text-red-400 font-bold underline decoration-red-900">err: {line.content}</div>}
             </div>
         ))}
+      </div>
 
-        <div className="flex gap-2 items-center mt-2">
-            <span className="text-blue-500 font-bold animate-pulse">➜</span>
-            <span className="text-blue-400/70 font-bold">{currentPath}</span>
+      {/* 3. PINNED INPUT ZONE (Strictly above 1px footer) */}
+      <div className="shrink-0 p-3 bg-[#020617] border-t border-slate-800/50">
+        <div className="flex gap-2 items-center">
+            <span className="text-blue-500 font-bold shrink-0">➜</span>
+            <span className="text-blue-400/70 font-bold shrink-0">{currentPath}</span>
             <input 
                 ref={inputRef}
                 type="text" 
@@ -225,7 +190,6 @@ export default function Terminal({ project, triggerHaptic }) {
                 spellCheck="false"
             />
         </div>
-        <div className="h-12" />
       </div>
     </div>
   );
