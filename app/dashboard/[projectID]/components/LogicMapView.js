@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, Link2, Smartphone, Zap, MousePointer2 } from "lucide-react";
 
 export default function LogicMapView({ triggerHaptic }) {
-  // Mock Nodes (Pages)
+  // Mock Nodes representing the screens in the app
   const [nodes, setNodes] = useState([
     { id: 'login', x: 50, y: 150, title: 'Login Screen', elements: ['UsernameField', 'LoginBtn'] },
     { id: 'home', x: 300, y: 50, title: 'Home Dashboard', elements: ['ProductList', 'ProfileIcon'] },
@@ -11,22 +11,25 @@ export default function LogicMapView({ triggerHaptic }) {
 
   return (
     <div className="flex-1 bg-[#020617] relative overflow-hidden flex flex-col">
-      {/* Grid Background */}
+      {/* Visual Grid Background */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
       
-      {/* Canvas Header */}
+      {/* Logic Canvas Header */}
       <div className="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur shrink-0 z-10">
         <div className="flex items-center gap-2">
           <span className="font-bold text-white uppercase tracking-tighter text-xs">Logic Canvas</span>
           <span className="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-600/30">PRO</span>
         </div>
-        <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-lg shadow-blue-500/20">
+        <button 
+          onClick={() => triggerHaptic && triggerHaptic()}
+          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-lg shadow-blue-500/20"
+        >
           <Zap className="w-3.5 h-3.5 fill-current" /> Auto-Layout
         </button>
       </div>
 
-      {/* The Map (Draggable Mock) */}
+      {/* Node-Based Mapping Area */}
       <div className="flex-1 relative cursor-grab active:cursor-grabbing">
         {nodes.map(node => (
           <div 
@@ -55,13 +58,14 @@ export default function LogicMapView({ triggerHaptic }) {
           </div>
         ))}
 
-        {/* MOCK SVG LINE (The Wire) */}
+        {/* MOCK LOGIC WIRES (Visual Connections) */}
         <svg className="absolute inset-0 pointer-events-none w-full h-full">
            <path d="M 250 200 C 275 200, 275 100, 300 100" stroke="#3b82f6" strokeWidth="2" fill="none" strokeDasharray="4" />
            <path d="M 250 210 C 275 210, 275 300, 300 300" stroke="#3b82f6" strokeWidth="2" fill="none" strokeDasharray="4" />
         </svg>
       </div>
 
+      {/* Floating Toolbar */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-900/80 backdrop-blur-xl border border-slate-700 p-2 rounded-2xl shadow-2xl">
           <ToolBtn icon={MousePointer2} active />
           <ToolBtn icon={Plus} />
