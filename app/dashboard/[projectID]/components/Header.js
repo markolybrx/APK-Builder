@@ -1,17 +1,18 @@
 import { 
   Bug, DownloadCloud, Code2, User, 
-  LogOut, Settings, CreditCard, HelpCircle 
+  ScanLine, Share2 
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 export default function Header({ 
   project, 
   triggerHaptic,
-  onImportClick,
-  onProfileClick
+  onImportClick,   // For Repo Converter
+  onCloneClick,    // For Clone Vision
+  onShareClick,    // For QR-Live Share
+  onProfileClick   // For Profile Settings
 }) {
-  
+
   const handleDebug = () => {
     triggerHaptic();
     alert("Debugging... No critical errors found.");
@@ -19,8 +20,8 @@ export default function Header({
 
   return (
     <header className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-50 select-none">
-      
-      {/* --- LEFT: LOGO (Home Link) --- */}
+
+      {/* --- LEFT: LOGO (Routes to Project Dashboard) --- */}
       <Link 
         href="/dashboard" 
         onClick={triggerHaptic}
@@ -46,22 +47,40 @@ export default function Header({
       </div>
 
       {/* --- RIGHT: ACTIONS --- */}
-      <div className="flex items-center gap-2">
-        
-        {/* Import Button */}
+      <div className="flex items-center gap-1">
+
+        {/* Clone Vision Button */}
+        <button 
+          onClick={onCloneClick}
+          className="p-2 text-slate-400 hover:text-pink-400 hover:bg-pink-400/10 rounded-lg transition-colors"
+          title="Clone from Screenshot"
+        >
+          <ScanLine className="w-5 h-5" />
+        </button>
+
+        {/* Import Button (Repo Converter) */}
         <button 
           onClick={onImportClick}
           className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors"
-          title="Import Repo"
+          title="Import / Convert Repo"
         >
           <DownloadCloud className="w-5 h-5" />
+        </button>
+
+        {/* QR Live Share Button */}
+        <button 
+          onClick={onShareClick}
+          className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+          title="Live Share (QR)"
+        >
+          <Share2 className="w-5 h-5" />
         </button>
 
         {/* Debug Button */}
         <button 
           onClick={handleDebug}
           className="p-2 text-slate-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-colors"
-          title="Debug"
+          title="Debug Project"
         >
           <Bug className="w-5 h-5" />
         </button>
@@ -73,7 +92,6 @@ export default function Header({
           onClick={onProfileClick}
           className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-500 transition-all overflow-hidden"
         >
-           {/* Placeholder for User Image */}
            <User className="w-5 h-5" />
         </button>
       </div>
