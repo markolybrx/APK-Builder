@@ -24,6 +24,13 @@ import WelcomeTour from "./components/WelcomeTour";
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
+  // --- 1. GLOBAL FILE SYSTEM STATE ---
+  const [projectFiles, setProjectFiles] = useState([
+    { name: "MainActivity.kt", path: "app/src/main/java/", content: "// Welcome to AppBuild AI\n// Your generated code will appear here." },
+    { name: "activity_main.xml", path: "app/src/main/res/layout/", content: "\n<LinearLayout />" },
+    { name: "AndroidManifest.xml", path: "app/src/main/", content: "<?xml version='1.0' encoding='utf-8'?>\n<manifest />" }
+  ]);
+
   // --- VIEW & TOUR STATE ---
   const [activeView, setActiveView] = useState('chat'); 
   const [previewMode, setPreviewMode] = useState('live'); 
@@ -47,13 +54,22 @@ export default function WorkspaceUI({ project }) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
-  // --- LIVE LOGIC UPDATE ---
+  // --- 2. GLOBAL FILE UPDATE FUNCTION ---
+  // This centralizes all AI-driven code changes
+  const updateFile = (fileName, newContent) => {
+    setProjectFiles(prev => prev.map(file => 
+      file.name === fileName ? { ...file, content: newContent } : file
+    ));
+    triggerHaptic();
+  };
+
   const handleLogicUpdate = (log) => {
+    // When logic map changes, we update the Manifest
+    updateFile("AndroidManifest.xml", `\n${log}`);
     setMessages(prev => [...prev, { 
       role: 'ai', 
-      text: `System: ${log}. I've synchronized the AndroidManifest and activity transitions based on your map.` 
+      text: `✅ System: I've updated your app navigation logic based on the map.` 
     }]);
-    triggerHaptic();
   };
 
   // --- LAYOUT ENGINE: Fixed Header/Footer Fix ---
@@ -73,7 +89,9 @@ export default function WorkspaceUI({ project }) {
   };
 
   const handleCloneSuccess = () => {
-    setMessages(prev => [...prev, { role: 'ai', text: "Screenshot analyzed! I've generated the matching XML layout for you." }]);
+    // Successfully cloning a vision updates the XML file
+    updateFile("activity_main.xml", "\n<RelativeLayout />");
+    setMessages(prev => [...prev, { role: 'ai', text: "Screenshot analyzed! I've updated activity_main.xml with the matching layout." }]);
     setIsCloneOpen(false);
     setActiveView('preview');
   };
@@ -83,8 +101,6 @@ export default function WorkspaceUI({ project }) {
       className="flex flex-col w-full bg-[#0f172a] text-slate-300 font-sans overflow-hidden fixed inset-0" 
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
-
-      {/* 1. STATIC HEADER */}
       <Header 
         project={project}
         triggerHaptic={triggerHaptic}
@@ -94,9 +110,7 @@ export default function WorkspaceUI({ project }) {
         onProfileClick={() => { setIsProfileOpen(true); triggerHaptic(); }}
       />
 
-      {/* 2. MAIN WORKSPACE */}
       <div className="flex flex-1 overflow-hidden relative min-h-0">
-
         <NavigationRail 
           activeView={activeView} 
           setActiveView={setActiveView} 
@@ -109,13 +123,13 @@ export default function WorkspaceUI({ project }) {
              <ChatInterface 
                 messages={messages} 
                 setMessages={setMessages}
+                onUpdateFile={updateFile} // Pass the file brain
                 setPreviewMode={(mode) => { setPreviewMode(mode); setActiveView('preview'); }}
                 onAIChange={(change) => { setPendingAIChange(change); setActiveView('preview'); }}
                 triggerHaptic={triggerHaptic}
              />
           )}
 
-          {/* Logic Map is now LIVE */}
           {activeView === 'logic' && (
              <LogicMapView 
                 triggerHaptic={triggerHaptic} 
@@ -123,14 +137,20 @@ export default function WorkspaceUI({ project }) {
              />
           )}
 
-          {activeView === 'files' && <FileExplorer />}
+          {activeView === 'files' && (
+             <FileExplorer files={projectFiles} /> // Pass the live files
+          )}
 
           {activeView === 'preview' && (
              <PreviewPane 
                 previewMode={previewMode}
                 setPreviewMode={setPreviewMode}
                 pendingChange={pendingAIChange}
-                onResolveChange={() => setPendingAIChange(null)}
+                onResolveChange={(logic) => {
+                    // Recorder now saves logic to code
+                    if (logic) updateFile("MainActivity.kt", logic);
+                    setPendingAIChange(null);
+                }}
                 triggerHaptic={triggerHaptic}
              />
           )}
