@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+// ERROR FIX: Removed useRouter entirely. 
+// We will use standard browser navigation to avoid the crash.
+
 export default function CreateProject() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,8 +34,9 @@ export default function CreateProject() {
         throw new Error(json.error || json.details || "Failed to create project");
       }
 
-      // Success! Redirect to the new project dashboard
-      router.push(`/dashboard/${json.projectId}`);
+      // NUCLEAR FIX: using window.location instead of router.push
+      // This forces a hard reload, which clears memory and prevents crashes.
+      window.location.href = `/dashboard/${json.projectId}`;
 
     } catch (err) {
       console.error(err);
@@ -57,31 +59,28 @@ export default function CreateProject() {
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           
-          {/* App Name Input */}
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">App Name</label>
             <input
               name="name"
               type="text"
               required
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
               placeholder="e.g. My Fitness Tracker"
             />
           </div>
 
-          {/* Description Input */}
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
             <textarea
               name="description"
               required
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-600 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all resize-none"
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-none"
               rows={4}
               placeholder="Describe what your app should do..."
             />
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-4 pt-4">
             <Link 
               href="/dashboard" 
@@ -92,7 +91,7 @@ export default function CreateProject() {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg py-3 transition-colors disabled:opacity-50"
             >
               {isLoading ? "Creating..." : "Create App"}
             </button>
