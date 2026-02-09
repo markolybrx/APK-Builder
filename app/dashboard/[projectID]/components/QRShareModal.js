@@ -3,6 +3,8 @@ import { useState } from "react";
 
 export default function QRShareModal({ isOpen, onClose, triggerHaptic }) {
   const [copied, setCopied] = useState(false);
+  
+  // MOCK: In a real app, this would be a dynamic tunnel URL
   const shareUrl = "https://appbuild-live.vercel.app/test/698958221aac";
 
   if (!isOpen) return null;
@@ -17,7 +19,12 @@ export default function QRShareModal({ isOpen, onClose, triggerHaptic }) {
   return (
     <div className="absolute inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-200">
       <div className="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center">
-        <button onClick={onClose} className="self-end p-2 text-slate-500 hover:text-white">
+        
+        {/* Close Button */}
+        <button 
+          onClick={onClose} 
+          className="self-end p-2 text-slate-500 hover:text-white transition-colors"
+        >
           <X className="w-5 h-5" />
         </button>
 
@@ -30,11 +37,15 @@ export default function QRShareModal({ isOpen, onClose, triggerHaptic }) {
           Scan this code with another device to test your app in a real browser environment.
         </p>
 
-        {/* MOCK QR CODE */}
+        {/* QR CODE DISPLAY */}
         <div className="bg-white p-4 rounded-2xl mb-6 shadow-lg">
-           <div className="w-40 h-40 bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://appbuild-live.vercel.app/test/698958221aac')] bg-cover" />
+           <div 
+             className="w-40 h-40 bg-cover" 
+             style={{ backgroundImage: `url('https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${shareUrl}')` }} 
+           />
         </div>
 
+        {/* ACTION BUTTONS */}
         <div className="flex w-full gap-2">
            <button 
              onClick={handleCopy}
@@ -43,7 +54,10 @@ export default function QRShareModal({ isOpen, onClose, triggerHaptic }) {
              {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
              {copied ? "Copied" : "Copy Link"}
            </button>
-           <button className="p-3 bg-blue-600 text-white rounded-xl active:scale-95 transition-all">
+           <button 
+             onClick={() => triggerHaptic()}
+             className="p-3 bg-blue-600 text-white rounded-xl active:scale-95 transition-all shadow-lg shadow-blue-500/20"
+           >
               <Share2 className="w-5 h-5" />
            </button>
         </div>
