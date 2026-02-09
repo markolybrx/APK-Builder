@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { 
   Github, ArrowRight, AlertTriangle, FileCode, 
@@ -139,17 +141,18 @@ export default function RepoConverter({ isOpen, onClose, onConvertSuccess, trigg
           </div>
         )}
 
-        {/* STEP 4: CONVERTING */}
+        {/* STEP 4: CONVERTING (FIXED JSX ERROR) */}
         {step === 'converting' && (
           <div className="space-y-6 py-4">
             <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
               <div className="h-full bg-blue-500 animate-[progress_2s_ease-in-out_infinite]" style={{width: '60%'}}></div>
             </div>
             <div className="space-y-2 font-mono text-xs text-slate-400">
-              <p className="text-green-400">> Translating logic...</p>
-              <p>> Creating XML Layouts from HTML...</p>
-              <p>> Generating MainActivity.kt...</p>
-              <p>> Initializing new git repo: {repoUrl.split('/').pop()}-android...</p>
+              {/* FIX: Replaced > with &gt; */}
+              <p className="text-green-400">&gt; Translating logic...</p>
+              <p>&gt; Creating XML Layouts from HTML...</p>
+              <p>&gt; Generating MainActivity.kt...</p>
+              <p>&gt; Initializing new git repo: {repoUrl.split('/').pop()}-android...</p>
             </div>
           </div>
         )}
