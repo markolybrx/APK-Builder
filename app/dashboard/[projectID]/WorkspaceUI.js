@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, User, Settings, CreditCard, LogOut, X } from "lucide-react";
 
-// --- COMPONENTS ---
+// --- CORE COMPONENTS ---
 import NavigationRail from "./components/NavigationRail";
 import ChatInterface from "./components/ChatInterface";
 import FileExplorer from "./components/FileExplorer";
@@ -27,7 +27,7 @@ export default function WorkspaceUI({ project }) {
   // --- VIEW & TOUR STATE ---
   const [activeView, setActiveView] = useState('chat'); 
   const [previewMode, setPreviewMode] = useState('live'); 
-  const [showTour, setShowTour] = useState(true); // Auto-start tour
+  const [showTour, setShowTour] = useState(true); 
 
   // --- MODAL & OVERLAY STATE ---
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
@@ -47,17 +47,39 @@ export default function WorkspaceUI({ project }) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
-  // Fix for Mobile Viewport Height (The "Chat goes under" fix)
+  // --- LAYOUT ENGINE: Fixed Header/Footer Fix ---
   useEffect(() => {
-    const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    const handleResize = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return (
-    // Fixed height using the --vh hack to prevent scrolling past the screen
-    <div className="flex flex-col w-full bg-[#0f172a] text-slate-300 font-sans overflow-hidden fixed inset-0" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+  const handleExitConfirm = () => {
+    triggerHaptic();
+    router.push('/dashboard');
+  };
 
-      {/* 1. HEADER (Locked to top) */}
+  const handleCloneSuccess = () => {
+    setMessages(prev => [...prev, { role: 'ai', text: "Screenshot analyzed! I've generated the matching XML layout for you." }]);
+    setIsCloneOpen(false);
+    setActiveView('preview');
+  };
+
+  return (
+    /* ROOT CONTAINER: 
+       Fixed position and inset-0 ensures it takes up the full viewport. 
+       Flex-col keeps the Header at the top and the body below.
+    */
+    <div 
+      className="flex flex-col w-full bg-[#0f172a] text-slate-300 font-sans overflow-hidden fixed inset-0" 
+      style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+    >
+
+      {/* 1. STATIC HEADER (Top) */}
       <Header 
         project={project}
         triggerHaptic={triggerHaptic}
@@ -67,9 +89,10 @@ export default function WorkspaceUI({ project }) {
         onProfileClick={() => { setIsProfileOpen(true); triggerHaptic(); }}
       />
 
-      {/* 2. BODY (Rail + Main Content) */}
+      {/* 2. MAIN WORKSPACE (Navigation Rail + Content) */}
       <div className="flex flex-1 overflow-hidden relative min-h-0">
 
+        {/* STATIC NAVIGATION RAIL (Left/Footer for mobile) */}
         <NavigationRail 
           activeView={activeView} 
           setActiveView={setActiveView} 
@@ -77,9 +100,8 @@ export default function WorkspaceUI({ project }) {
           triggerHaptic={triggerHaptic}
         />
 
-        {/* MAIN WORKSPACE AREA */}
+        {/* SCROLLABLE CONTENT AREA (Right) */}
         <main className="flex-1 flex flex-col min-w-0 bg-[#0f172a] relative overflow-hidden">
-          
           {activeView === 'chat' && (
              <ChatInterface 
                 messages={messages} 
@@ -97,7 +119,7 @@ export default function WorkspaceUI({ project }) {
              <PreviewPane 
                 previewMode={previewMode}
                 setPreviewMode={setPreviewMode}
-                pendingChange={pendingAIChange}
+                pendingChange={pendingAIChange} // Contextual Lens
                 onResolveChange={() => setPendingAIChange(null)}
                 triggerHaptic={triggerHaptic}
              />
@@ -108,7 +130,7 @@ export default function WorkspaceUI({ project }) {
           {activeView === 'settings' && <SettingsView project={project} triggerHaptic={triggerHaptic} />}
         </main>
 
-        {/* --- PROFILE SIDEBAR OVERLAY --- */}
+        {/* --- PROFILE OVERLAY --- */}
         {isProfileOpen && (
            <>
              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-[100]" onClick={() => setIsProfileOpen(false)} />
@@ -122,30 +144,25 @@ export default function WorkspaceUI({ project }) {
                        <User className="w-8 h-8 text-blue-400" />
                     </div>
                     <h3 className="font-bold text-white">Visionary User</h3>
-                    <p className="text-xs text-slate-500 italic">Early Access</p>
+                    <p className="text-xs text-slate-500 italic uppercase">Pro Beta Access</p>
                 </div>
-                <div className="flex-1 p-2 space-y-1">
+                <div className="flex-1 p-2 space-y-1 overflow-y-auto">
                    <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 rounded-lg text-left"><Settings className="w-4 h-4" /> Account Settings</button>
                    <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 rounded-lg text-left"><CreditCard className="w-4 h-4" /> Subscription</button>
-                   <button onClick={() => router.push('/login')} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 rounded-lg text-left"><LogOut className="w-4 h-4" /> Sign Out</button>
+                   <button onClick={() => router.push('/login')} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 rounded-lg text-left mt-auto"><LogOut className="w-4 h-4" /> Sign Out</button>
                 </div>
              </div>
            </>
         )}
       </div>
 
-      {/* --- MODAL LAYER (Z-200+) --- */}
-
+      {/* --- FLOATING MODALS --- */}
       <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} triggerHaptic={triggerHaptic} />
-      
-      <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} 
-        onCloneSuccess={() => { setIsCloneOpen(false); setActiveView('preview'); }} />
-
+      <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} onCloneSuccess={handleCloneSuccess} />
       <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} />
-
       {showTour && <WelcomeTour onComplete={() => setShowTour(false)} triggerHaptic={triggerHaptic} />}
 
-      {/* Exit Dialog */}
+      {/* EXIT CONFIRMATION DIALOG */}
       {isExitModalOpen && (
         <div className="absolute inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center">
