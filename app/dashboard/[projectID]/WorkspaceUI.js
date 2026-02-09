@@ -47,6 +47,15 @@ export default function WorkspaceUI({ project }) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
+  // --- LIVE LOGIC UPDATE ---
+  const handleLogicUpdate = (log) => {
+    setMessages(prev => [...prev, { 
+      role: 'ai', 
+      text: `System: ${log}. I've synchronized the AndroidManifest and activity transitions based on your map.` 
+    }]);
+    triggerHaptic();
+  };
+
   // --- LAYOUT ENGINE: Fixed Header/Footer Fix ---
   useEffect(() => {
     const handleResize = () => {
@@ -70,16 +79,12 @@ export default function WorkspaceUI({ project }) {
   };
 
   return (
-    /* ROOT CONTAINER: 
-       Fixed position and inset-0 ensures it takes up the full viewport. 
-       Flex-col keeps the Header at the top and the body below.
-    */
     <div 
       className="flex flex-col w-full bg-[#0f172a] text-slate-300 font-sans overflow-hidden fixed inset-0" 
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
 
-      {/* 1. STATIC HEADER (Top) */}
+      {/* 1. STATIC HEADER */}
       <Header 
         project={project}
         triggerHaptic={triggerHaptic}
@@ -89,10 +94,9 @@ export default function WorkspaceUI({ project }) {
         onProfileClick={() => { setIsProfileOpen(true); triggerHaptic(); }}
       />
 
-      {/* 2. MAIN WORKSPACE (Navigation Rail + Content) */}
+      {/* 2. MAIN WORKSPACE */}
       <div className="flex flex-1 overflow-hidden relative min-h-0">
 
-        {/* STATIC NAVIGATION RAIL (Left/Footer for mobile) */}
         <NavigationRail 
           activeView={activeView} 
           setActiveView={setActiveView} 
@@ -100,7 +104,6 @@ export default function WorkspaceUI({ project }) {
           triggerHaptic={triggerHaptic}
         />
 
-        {/* SCROLLABLE CONTENT AREA (Right) */}
         <main className="flex-1 flex flex-col min-w-0 bg-[#0f172a] relative overflow-hidden">
           {activeView === 'chat' && (
              <ChatInterface 
@@ -112,14 +115,21 @@ export default function WorkspaceUI({ project }) {
              />
           )}
 
-          {activeView === 'logic' && <LogicMapView triggerHaptic={triggerHaptic} />}
+          {/* Logic Map is now LIVE */}
+          {activeView === 'logic' && (
+             <LogicMapView 
+                triggerHaptic={triggerHaptic} 
+                onLogicUpdate={handleLogicUpdate}
+             />
+          )}
+
           {activeView === 'files' && <FileExplorer />}
 
           {activeView === 'preview' && (
              <PreviewPane 
                 previewMode={previewMode}
                 setPreviewMode={setPreviewMode}
-                pendingChange={pendingAIChange} // Contextual Lens
+                pendingChange={pendingAIChange}
                 onResolveChange={() => setPendingAIChange(null)}
                 triggerHaptic={triggerHaptic}
              />
@@ -144,7 +154,6 @@ export default function WorkspaceUI({ project }) {
                        <User className="w-8 h-8 text-blue-400" />
                     </div>
                     <h3 className="font-bold text-white">Visionary User</h3>
-                    <p className="text-xs text-slate-500 italic uppercase">Pro Beta Access</p>
                 </div>
                 <div className="flex-1 p-2 space-y-1 overflow-y-auto">
                    <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 rounded-lg text-left"><Settings className="w-4 h-4" /> Account Settings</button>
@@ -162,13 +171,11 @@ export default function WorkspaceUI({ project }) {
       <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} />
       {showTour && <WelcomeTour onComplete={() => setShowTour(false)} triggerHaptic={triggerHaptic} />}
 
-      {/* EXIT CONFIRMATION DIALOG */}
+      {/* EXIT DIALOG */}
       {isExitModalOpen && (
         <div className="absolute inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center">
-            <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mb-4 mx-auto"><AlertTriangle className="w-6 h-6 text-red-500" /></div>
             <h3 className="text-xl font-bold text-white mb-2">Exit Workspace?</h3>
-            <p className="text-slate-400 text-sm mb-6">Unsaved changes will be lost.</p>
             <div className="flex gap-3">
               <button onClick={() => setIsExitModalOpen(false)} className="flex-1 py-3 text-slate-300 font-bold bg-slate-800 rounded-xl hover:bg-slate-700">Cancel</button>
               <button onClick={handleExitConfirm} className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg">Yes, Exit</button>
