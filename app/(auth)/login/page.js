@@ -1,12 +1,14 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { Github, Smartphone, ArrowLeft } from "lucide-react";
+import { Github, Smartphone, ArrowLeft, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async (provider) => {
     setIsLoading(true);
@@ -14,16 +16,16 @@ export default function LoginPage() {
   };
 
   return (
-    // Added 'px-4' to container to prevent edge touching on small screens
+    // Container: Added 'px-4' to prevent edge touching
     <div className="min-h-screen w-full flex items-center justify-center bg-[#0f172a] px-4 py-12 relative overflow-hidden">
-      
+
       {/* Background Ambience */}
       <div className="absolute top-[-10%] left-[-10%] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-blue-600/20 rounded-full blur-[80px] md:blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[300px] md:w-[500px] h-[300px] md:h-[500px] bg-purple-600/20 rounded-full blur-[80px] md:blur-[120px] pointer-events-none" />
 
-      {/* Main Card - Added w-full and max-w-md to fix the squeeze */}
-      <div className="w-full max-w-md bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl relative z-10">
-        
+      {/* Main Card: Removed 'border', Added 'shadow-black/50' for depth */}
+      <div className="w-full max-w-md bg-slate-900/50 backdrop-blur-xl rounded-2xl p-6 md:p-8 shadow-2xl shadow-black/50 relative z-10">
+
         <Link href="/" className="inline-flex items-center text-slate-400 hover:text-white mb-6 text-sm transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Home
@@ -40,11 +42,11 @@ export default function LoginPage() {
 
         {/* Login Buttons */}
         <div className="space-y-4">
-          
+
           <button
             onClick={() => handleLogin('github')}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 bg-[#24292F] text-white hover:bg-[#24292F]/90 font-bold py-3.5 px-4 rounded-xl transition-all disabled:opacity-50 border border-white/10"
+            className="w-full flex items-center justify-center gap-3 bg-[#24292F] text-white hover:bg-[#24292F]/90 font-bold py-3.5 px-4 rounded-xl transition-all disabled:opacity-50"
           >
             <Github className="w-5 h-5" />
             Continue with GitHub
@@ -63,6 +65,24 @@ export default function LoginPage() {
                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
             Continue with Google
+          </button>
+
+          {/* --- DEV BYPASS SECTION --- */}
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-slate-900/50 px-2 text-slate-500">Dev Option</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="w-full flex items-center justify-center gap-3 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border border-yellow-500/20 font-bold py-3.5 px-4 rounded-xl transition-all"
+          >
+            <ShieldAlert className="w-5 h-5" />
+            Bypass Auth (Dev Only)
           </button>
 
         </div>
