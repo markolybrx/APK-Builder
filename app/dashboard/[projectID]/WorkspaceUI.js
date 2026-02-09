@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, User, Settings, CreditCard, LogOut, X } from "lucide-react";
 
+// --- COMPONENTS ---
 import NavigationRail from "./components/NavigationRail";
 import ChatInterface from "./components/ChatInterface";
 import FileExplorer from "./components/FileExplorer";
@@ -12,7 +13,7 @@ import Terminal from "./components/Terminal";
 import Header from "./components/Header";
 import HistoryView from "./components/HistoryView";
 import SettingsView from "./components/SettingsView";
-import RepoConverter from "./components/RepoConverter"; // <--- NEW IMPORT
+import RepoConverter from "./components/RepoConverter";
 
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
@@ -20,7 +21,8 @@ export default function WorkspaceUI({ project }) {
   // --- STATE ---
   const [activeView, setActiveView] = useState('chat'); 
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-  const [isConverterOpen, setIsConverterOpen] = useState(false); // <--- CONVERTER STATE
+  const [isConverterOpen, setIsConverterOpen] = useState(false); 
+  const [isProfileOpen, setIsProfileOpen] = useState(false); // <--- NEW PROFILE STATE
   
   const [messages, setMessages] = useState([
     { role: 'ai', text: `Hi! I'm ready to build "${project?.name || 'your app'}".` },
@@ -28,7 +30,7 @@ export default function WorkspaceUI({ project }) {
 
   const [previewMode, setPreviewMode] = useState('live'); 
 
-  // Utils
+  // --- UTILS ---
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
@@ -39,74 +41,118 @@ export default function WorkspaceUI({ project }) {
   };
 
   const handleConvertSuccess = () => {
-    // In a real app, this would reload the project data
     setMessages(prev => [...prev, { role: 'ai', text: "Repository imported successfully! I've converted the logic to Android. Check the Files tab." }]);
     setIsConverterOpen(false);
-    setActiveView('files'); // Switch to files to show the result
+    setActiveView('files'); 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex h-[100dvh] w-full bg-slate-950 text-slate-300 font-sans overflow-hidden">
+    // ROOT: Flex Column (Header on top, everything else below)
+    <div className="flex flex-col h-screen w-full bg-[#0f172a] text-slate-300 font-sans overflow-hidden fixed inset-0">
       
-      {/* 1. LEFT NAVIGATION RAIL */}
-      <NavigationRail 
-        activeView={activeView} 
-        setActiveView={setActiveView} 
-        onExit={() => setIsExitModalOpen(true)}
+      {/* 1. HEADER (Full Width) */}
+      <Header 
+        project={project}
         triggerHaptic={triggerHaptic}
+        onImportClick={() => setIsConverterOpen(true)}
+        onProfileClick={() => setIsProfileOpen(true)}
       />
 
-      {/* 2. MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#0f172a] relative">
+      {/* 2. WORKSPACE BODY (Rail + Main View) */}
+      <div className="flex flex-1 overflow-hidden relative">
         
-        {/* HEADER (Now has Import Button) */}
-        <Header 
-          project={project}
-          leftOpen={activeView === 'files'} // Just for visual sync, optional
-          setLeftOpen={() => setActiveView('files')}
-          rightOpen={activeView === 'preview'}
-          setRightOpen={() => setActiveView(activeView === 'preview' ? 'chat' : 'preview')}
+        {/* Left Navigation Rail */}
+        <NavigationRail 
+          activeView={activeView} 
+          setActiveView={setActiveView} 
+          onExit={() => setIsExitModalOpen(true)}
           triggerHaptic={triggerHaptic}
-          onImportClick={() => setIsConverterOpen(true)} // <--- TRIGGER
         />
-        
-        {/* VIEW: CHAT */}
-        {activeView === 'chat' && (
-           <ChatInterface 
-              messages={messages} 
-              setMessages={setMessages}
-              setPreviewMode={(mode) => { setPreviewMode(mode); setActiveView('preview'); }}
-              triggerHaptic={triggerHaptic}
-           />
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-[#0f172a] relative">
+          
+          {activeView === 'chat' && (
+             <ChatInterface 
+                messages={messages} 
+                setMessages={setMessages}
+                setPreviewMode={(mode) => { setPreviewMode(mode); setActiveView('preview'); }}
+                triggerHaptic={triggerHaptic}
+             />
+          )}
+
+          {activeView === 'files' && <FileExplorer />}
+
+          {activeView === 'preview' && (
+             <PreviewPane 
+                previewMode={previewMode}
+                setPreviewMode={setPreviewMode}
+                triggerHaptic={triggerHaptic}
+             />
+          )}
+
+          {activeView === 'terminal' && (
+             <div className="h-full w-full">
+               <Terminal project={project} triggerHaptic={triggerHaptic} />
+             </div>
+          )}
+
+          {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
+          {activeView === 'settings' && <SettingsView project={project} triggerHaptic={triggerHaptic} />}
+
+        </div>
+
+        {/* --- PROFILE SIDEBAR OVERLAY --- */}
+        {isProfileOpen && (
+           <>
+             {/* Backdrop */}
+             <div 
+               className="absolute inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+               onClick={() => setIsProfileOpen(false)}
+             />
+             
+             {/* Drawer */}
+             <div className="absolute top-0 right-0 bottom-0 w-72 bg-slate-900 border-l border-slate-800 shadow-2xl z-[70] animate-in slide-in-from-right duration-200 flex flex-col">
+                {/* Drawer Header */}
+                <div className="h-14 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
+                   <span className="font-bold text-white">Profile</span>
+                   <button onClick={() => setIsProfileOpen(false)} className="p-1 hover:bg-slate-800 rounded">
+                     <X className="w-5 h-5 text-slate-400" />
+                   </button>
+                </div>
+
+                {/* User Info */}
+                <div className="p-6 flex flex-col items-center border-b border-slate-800">
+                    <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-blue-500 flex items-center justify-center mb-3">
+                       <User className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <h3 className="font-bold text-white">Guest User</h3>
+                    <p className="text-xs text-slate-500">guest@appbuild.ai</p>
+                    <span className="mt-2 px-2 py-0.5 bg-blue-600/20 text-blue-400 text-[10px] font-bold uppercase rounded border border-blue-600/30">
+                       Free Plan
+                    </span>
+                </div>
+
+                {/* Menu Items */}
+                <div className="flex-1 p-2 space-y-1">
+                   <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-left">
+                      <Settings className="w-4 h-4" /> Account Settings
+                   </button>
+                   <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-left">
+                      <CreditCard className="w-4 h-4" /> Subscription
+                   </button>
+                   <button className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-left">
+                      <LogOut className="w-4 h-4" /> Sign Out
+                   </button>
+                </div>
+             </div>
+           </>
         )}
-
-        {/* VIEW: FILES */}
-        {activeView === 'files' && <FileExplorer />}
-
-        {/* VIEW: PREVIEW */}
-        {activeView === 'preview' && (
-           <PreviewPane 
-              previewMode={previewMode}
-              setPreviewMode={setPreviewMode}
-              triggerHaptic={triggerHaptic}
-           />
-        )}
-
-        {/* VIEW: TERMINAL */}
-        {activeView === 'terminal' && (
-           <div className="h-full w-full">
-             <Terminal triggerHaptic={triggerHaptic} />
-           </div>
-        )}
-
-        {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
-        {activeView === 'settings' && <SettingsView project={project} triggerHaptic={triggerHaptic} />}
 
       </div>
 
-      {/* --- MODALS --- */}
+      {/* --- OTHER MODALS --- */}
       
-      {/* 1. EXIT CONFIRMATION */}
       {isExitModalOpen && (
         <div className="absolute inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full">
@@ -123,7 +169,6 @@ export default function WorkspaceUI({ project }) {
         </div>
       )}
 
-      {/* 2. REPO CONVERTER MODAL (NEW) */}
       <RepoConverter 
         isOpen={isConverterOpen}
         onClose={() => setIsConverterOpen(false)}
