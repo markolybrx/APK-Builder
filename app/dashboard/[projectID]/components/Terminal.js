@@ -10,10 +10,14 @@ import {
   Power
 } from "lucide-react";
 
-export default function Terminal({ triggerHaptic }) {
+// FIX: Added 'project' to the props
+export default function Terminal({ project, triggerHaptic }) {
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   
+  // FIX: Safely calculate project name or default to 'app'
+  const projectName = (project?.name || 'app').toLowerCase().replace(/\s/g, '-');
+
   // --- STATE ---
   const [history, setHistory] = useState([
     { type: 'system', content: 'Linux android-build-server 5.10.0 #1 SMP PREEMPT' },
@@ -27,7 +31,6 @@ export default function Terminal({ triggerHaptic }) {
   const [currentPath, setCurrentPath] = useState("~/project");
 
   // --- MOCK FILE SYSTEM STATE ---
-  // Keeps track of fake files so 'mkdir' and 'touch' actually seem to work
   const [fileSystem, setFileSystem] = useState({
     "~/project": ["src", "res", "AndroidManifest.xml", "build.gradle", "README.md"],
     "~/project/src": ["main", "test"],
@@ -54,14 +57,14 @@ export default function Terminal({ triggerHaptic }) {
     setCmdHistory(prev => [rawCmd, ...prev]);
     setHistoryIndex(-1);
     setInput("");
-    triggerHaptic();
+    triggerHaptic && triggerHaptic();
 
     // 2. Parse Arguments
     const args = rawCmd.trim().split(/\s+/);
     const cmd = args[0].toLowerCase();
     const param = args[1];
 
-    // 3. Simulate Network Delay (random 50-200ms)
+    // 3. Simulate Network Delay
     await new Promise(r => setTimeout(r, Math.random() * 150 + 50));
 
     let output = [];
@@ -85,7 +88,6 @@ export default function Terminal({ triggerHaptic }) {
         } else if (param === 'project' && currentPath === '~') {
           setCurrentPath("~/project");
         } else if (fileSystem[currentPath]?.includes(param)) {
-           // Basic check if it "looks" like a folder
            if (!param.includes('.')) {
              setCurrentPath(`${currentPath}/${param}`);
            } else {
@@ -106,7 +108,6 @@ export default function Terminal({ triggerHaptic }) {
                 ...prev,
                 [currentPath]: [...(prev[currentPath] || []), param]
             }));
-            // No output on success, just like real linux
         } else {
             output = [{ type: 'error', content: 'mkdir: missing operand' }];
         }
@@ -158,7 +159,7 @@ export default function Terminal({ triggerHaptic }) {
                 await new Promise(r => setTimeout(r, 800));
                 setHistory(prev => [...prev, { type: 'info', content: `64 bytes from 127.0.0.1: icmp_seq=${i} ttl=64 time=${(Math.random()*10).toFixed(2)} ms` }]);
             }
-            return; // Loop handled updates
+            return;
         }
         break;
       
@@ -255,7 +256,6 @@ export default function Terminal({ triggerHaptic }) {
         ];
         break;
 
-      // === CATCH ALL ===
       default:
         output = [{ type: 'error', content: `bash: ${cmd}: command not found` }];
     }
@@ -285,7 +285,6 @@ export default function Terminal({ triggerHaptic }) {
         setInput("");
       }
     } else if (e.key === 'c' && e.ctrlKey) {
-        // Ctrl+C simulation
         setHistory(prev => [...prev, { type: 'user', content: '^C', path: currentPath }]);
         setInput("");
     }
@@ -298,13 +297,14 @@ export default function Terminal({ triggerHaptic }) {
       <div className="h-10 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900 shrink-0 select-none">
         <div className="flex items-center gap-2 text-slate-400">
            <TerminalIcon className="w-4 h-4" />
-           <span className="font-bold">user@{project?.name?.toLowerCase().replace(/\s/g,'-') || 'app'}: ~</span>
+           {/* FIX: Using safe calculated project name */}
+           <span className="font-bold">user@{projectName}: ~</span>
         </div>
         <div className="flex items-center gap-2">
-            <button onClick={() => { setHistory([]); triggerHaptic(); }} className="p-1.5 hover:bg-slate-800 rounded text-slate-500 hover:text-white" title="Clear">
+            <button onClick={() => { setHistory([]); triggerHaptic && triggerHaptic(); }} className="p-1.5 hover:bg-slate-800 rounded text-slate-500 hover:text-white" title="Clear">
                 <Trash2 className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => { setIsMaximized(!isMaximized); triggerHaptic(); }} className="p-1.5 hover:bg-slate-800 rounded text-slate-500 hover:text-white">
+            <button onClick={() => { setIsMaximized(!isMaximized); triggerHaptic && triggerHaptic(); }} className="p-1.5 hover:bg-slate-800 rounded text-slate-500 hover:text-white">
                 {isMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </button>
             {isMaximized && (
