@@ -10,20 +10,21 @@ import Link from "next/link";
 
 export default function WorkspaceUI({ project }) {
   // UI States
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false); // Mobile: False by default
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(false); // Mobile: False by default
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [isGithubConnected, setIsGithubConnected] = useState(false); 
 
-  // Helper to toggle sidebars on mobile
+  // Helpers
   const toggleLeftSidebar = () => setLeftSidebarOpen(!leftSidebarOpen);
   const toggleRightSidebar = () => setRightSidebarOpen(!rightSidebarOpen);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-300 overflow-hidden font-sans">
+    // FIXED HEIGHT CONTAINER: h-screen + overflow-hidden locks the viewport
+    <div className="flex flex-col h-screen w-full bg-slate-950 text-slate-300 overflow-hidden font-sans fixed inset-0">
 
-      {/* --- TOP NAVIGATION BAR --- */}
-      <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-50 shrink-0">
-
+      {/* --- TOP NAVIGATION BAR (Fixed Height) --- */}
+      <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-50 shrink-0 select-none">
+        
         {/* Left: Mobile Menu & Logo */}
         <div className="flex items-center gap-3">
           <button 
@@ -63,7 +64,7 @@ export default function WorkspaceUI({ project }) {
 
           <div className="h-6 w-px bg-slate-800 mx-1 md:mx-2" />
 
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-600/20">
+          <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-600/20 active:scale-95">
             <Play className="w-3.5 h-3.5 fill-current" />
             <span className="hidden sm:inline">Build APK</span>
           </button>
@@ -79,25 +80,25 @@ export default function WorkspaceUI({ project }) {
       </header>
 
 
-      {/* --- MAIN WORKSPACE AREA --- */}
-      <div className="flex-1 flex overflow-hidden relative">
+      {/* --- MAIN WORKSPACE AREA (Flex-1 fills remaining height) --- */}
+      <div className="flex-1 flex overflow-hidden relative w-full">
 
         {/* 1. LEFT SIDEBAR (File Explorer) */}
-        {/* Mobile: Absolute position, slides in. Desktop: Relative, always visible */}
         <aside 
           className={`
-            absolute md:relative z-40 h-full w-64 bg-slate-950 border-r border-slate-800 shadow-2xl md:shadow-none transition-transform duration-300 ease-in-out
+            absolute md:relative z-40 h-full w-64 bg-slate-950 border-r border-slate-800 shadow-2xl md:shadow-none transition-transform duration-300 ease-in-out flex flex-col
             ${leftSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}
         >
-          <div className="p-4 border-b border-slate-800 flex justify-between items-center h-12">
+          <div className="p-4 border-b border-slate-800 flex justify-between items-center h-12 shrink-0">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Project Files</span>
             <button onClick={() => setLeftSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white">
               <X className="w-4 h-4"/>
             </button>
           </div>
 
-          <div className="p-2 space-y-1 font-mono text-sm overflow-y-auto h-[calc(100%-3rem)]">
+          {/* SCROLLABLE LIST */}
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 font-mono text-sm custom-scrollbar">
             <FileItem name="app" type="folder" isOpen={true} />
             <div className="pl-4 space-y-1 border-l border-slate-800 ml-2">
                <FileItem name="src" type="folder" />
@@ -115,7 +116,7 @@ export default function WorkspaceUI({ project }) {
           </div>
         </aside>
 
-        {/* OVERLAY for Mobile Sidebar (Clicking outside closes it) */}
+        {/* OVERLAY for Mobile Sidebar */}
         {leftSidebarOpen && (
           <div 
             className="absolute inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm"
@@ -125,17 +126,17 @@ export default function WorkspaceUI({ project }) {
 
 
         {/* 2. CENTER PANEL (Code Editor) */}
-        <main className="flex-1 bg-[#0f172a] relative flex flex-col min-w-0">
+        <main className="flex-1 bg-[#0f172a] relative flex flex-col min-w-0 h-full">
           
-          {/* Editor Tabs */}
-          <div className="flex items-center bg-slate-900 border-b border-slate-800 overflow-x-auto no-scrollbar shrink-0">
+          {/* Editor Tabs (Fixed Height) */}
+          <div className="flex items-center bg-slate-900 border-b border-slate-800 overflow-x-auto no-scrollbar shrink-0 h-10">
             <Tab name="MainActivity.kt" active type="kt" />
             <Tab name="activity_main.xml" type="xml" />
           </div>
 
-          {/* Editor Content */}
-          <div className="flex-1 p-4 md:p-8 overflow-auto">
-             <div className="font-mono text-sm leading-relaxed whitespace-pre font-medium">
+          {/* Editor Content (Scrollable) */}
+          <div className="flex-1 p-4 md:p-8 overflow-auto custom-scrollbar">
+             <div className="font-mono text-sm leading-relaxed whitespace-pre font-medium pb-20">
                <span className="text-purple-400">package</span> {project?.packageName || "com.example.app"}<br/><br/>
                <span className="text-purple-400">import</span> android.os.Bundle<br/>
                <span className="text-purple-400">import</span> androidx.activity.ComponentActivity<br/><br/>
@@ -153,7 +154,6 @@ export default function WorkspaceUI({ project }) {
 
 
         {/* 3. RIGHT SIDEBAR (AI Assistant) */}
-        {/* Mobile: Absolute position (over content). Desktop: Relative (side-by-side) if open */}
         {rightSidebarOpen && (
           <aside className="absolute md:relative right-0 h-full w-80 bg-slate-900 border-l border-slate-800 flex flex-col z-40 shadow-2xl md:shadow-none">
             
@@ -167,7 +167,8 @@ export default function WorkspaceUI({ project }) {
               </button>
             </div>
 
-            <div className="flex-1 p-4 overflow-y-auto space-y-4">
+            {/* CHAT SCROLL AREA */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar">
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
                   <Sparkles className="w-4 h-4 text-purple-400" />
@@ -179,7 +180,8 @@ export default function WorkspaceUI({ project }) {
               </div>
             </div>
 
-            <div className="p-4 border-t border-slate-800 bg-slate-900 shrink-0">
+            {/* INPUT AREA (Fixed at bottom) */}
+            <div className="p-4 border-t border-slate-800 bg-slate-900 shrink-0 pb-safe">
               <div className="relative">
                 <input 
                   type="text" 
@@ -221,7 +223,7 @@ function Tab({ name, active, type }) {
   const isKt = type === 'kt';
   return (
     <div className={`
-      px-4 py-2.5 text-xs font-medium border-r border-slate-800 cursor-pointer flex items-center gap-2 select-none whitespace-nowrap
+      px-4 py-2.5 text-xs font-medium border-r border-slate-800 cursor-pointer flex items-center gap-2 select-none whitespace-nowrap h-full
       ${active ? 'bg-[#0f172a] text-white border-t-2 border-t-blue-500' : 'text-slate-500 hover:bg-slate-800 hover:text-slate-300 bg-slate-900'}
     `}>
       <span className={isKt ? "text-blue-400" : "text-orange-400"}>
