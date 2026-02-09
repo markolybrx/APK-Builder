@@ -29,8 +29,9 @@ export default function PreviewPane({
   // --- 1. THE VIRTUAL XML RENDERER ---
   // This parses the raw XML string into visual UI elements
   const renderedUI = useMemo(() => {
-    const mainXml = projectFiles.find(f => f.name === "activity_main.xml")?.content || "";
-    
+  const mainFile = projectFiles?.find(f => f.name === "activity_main.xml");
+  const mainXml = mainFile?.content || "";
+
     // Simple regex parser for demo-to-reality transition
     const elements = [];
     const buttonMatches = [...mainXml.matchAll(/<Button[^>]*android:text="([^"]*)"[^>]*\/>/g)];
