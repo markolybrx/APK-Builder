@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 import { clientPromise } from "@/lib/db"; 
-// import { redirect } from "next/navigation"; // Commented out for Dev Mode
+// import { redirect } from "next/navigation"; // <--- MUST BE COMMENTED OUT
 import { Plus, Smartphone, Package, ShieldAlert } from 'lucide-react';
 
 async function getProjects(userId) {
@@ -17,7 +17,6 @@ async function getProjects(userId) {
       .sort({ updatedAt: -1 })
       .toArray();
 
-    // SANITIZATION: Convert EVERYTHING to pure JSON strings to prevent crashes
     const safeProjects = projects.map(p => ({
       _id: p._id.toString(),
       userId: p.userId.toString(),
@@ -39,32 +38,30 @@ async function getProjects(userId) {
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
 
-  // --- DEV MODE: SECURITY DISABLED ---
-  // The redirect is commented out so the "Bypass Auth" button works
+  // --- CRITICAL: THESE LINES MUST BE COMMENTED OUT ---
   // if (!session) {
   //   redirect('/api/auth/signin');
   // }
-  // -----------------------------------
+  // ---------------------------------------------------
 
-  // If no session exists, use a fake ID so the database query doesn't crash
+  // Fallback ID for Dev Mode
   const userId = session?.user?.id || "dev-mode-user";
   const projects = await getProjects(userId);
 
   return (
     <div className="min-h-screen w-full bg-[#0f172a] text-white p-4 md:p-8 pt-24">
       <div className="max-w-6xl mx-auto space-y-8">
-
-        {/* Dev Mode Warning Banner (Only shows if bypassed) */}
+        
         {!session && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-xl flex items-center gap-3">
             <ShieldAlert className="w-5 h-5" />
             <span className="text-sm font-medium">
-              You are in <strong>Dev Mode</strong> (Logged out). Projects you create here will not be saved to a real account.
+              Dev Mode Active (Not logged in)
             </span>
           </div>
         )}
 
-        {/* Header */}
+        {/* ... Rest of your dashboard code ... */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
@@ -81,7 +78,6 @@ export default async function Dashboard() {
           </div>
         </div>
 
-        {/* List */}
         {projects.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-slate-800 rounded-3xl bg-slate-900/50">
             <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -110,7 +106,6 @@ export default async function Dashboard() {
             ))}
           </div>
         )}
-
       </div>
     </div>
   );
