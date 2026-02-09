@@ -1,63 +1,115 @@
-import { Clock, GitCommit, RotateCcw } from "lucide-react";
+import { Clock, RotateCcw, ScanLine, Circle, Zap, MousePointer2, GitCommit } from "lucide-react";
 
 export default function HistoryView({ triggerHaptic }) {
-  // Mock History Data
-  const commits = [
-    { id: 1, version: 'v0.2.1', time: 'Just now', desc: 'Auto-save: Updated WorkspaceUI layout', active: true },
-    { id: 2, version: 'v0.2.0', time: '10 mins ago', desc: 'Added NavigationRail component', active: false },
-    { id: 3, version: 'v0.1.5', time: '1 hour ago', desc: 'Implemented Voice Control', active: false },
-    { id: 4, version: 'v0.1.0', time: 'Yesterday', desc: 'Project Initialized', active: false },
+  // --- UPDATED AUDIT DATA ---
+  // In the next logic phase, this will read from a 'logs' prop in WorkspaceUI
+  const auditLogs = [
+    { 
+      id: 1, 
+      tool: 'Clone Vision', 
+      icon: ScanLine, 
+      time: 'Just now', 
+      desc: 'Generated activity_main.xml from screenshot', 
+      color: 'text-pink-400',
+      active: true 
+    },
+    { 
+      id: 2, 
+      tool: 'Behavior Recorder', 
+      icon: Circle, 
+      time: '12 mins ago', 
+      desc: 'Injected onClick listeners into MainActivity.kt', 
+      color: 'text-red-400',
+      active: false 
+    },
+    { 
+      id: 3, 
+      tool: 'Logic Map', 
+      icon: Zap, 
+      time: '1 hour ago', 
+      desc: 'Modified AndroidManifest.xml navigation flow', 
+      color: 'text-blue-400',
+      active: false 
+    },
+    { 
+      id: 4, 
+      tool: 'AI Chat', 
+      icon: MousePointer2, 
+      time: '2 hours ago', 
+      desc: 'Refactored theme colors in colors.xml', 
+      color: 'text-purple-400',
+      active: false 
+    },
   ];
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#0f172a] text-slate-300">
-      
-      {/* Header */}
+    <div className="flex flex-col h-full w-full bg-[#0f172a] text-slate-300 font-sans">
+
+      {/* --- HEADER (Static) --- */}
       <div className="h-14 border-b border-slate-800 flex items-center px-4 bg-slate-900 shrink-0">
-        <span className="font-bold text-white tracking-wide">Version History</span>
+        <Clock className="w-4 h-4 mr-2 text-blue-400" />
+        <span className="font-bold text-white tracking-widest uppercase text-[10px]">AI Audit Log & History</span>
       </div>
 
-      {/* Timeline */}
-      <div className="flex-1 overflow-y-auto p-6">
+      {/* --- TIMELINE AREA --- */}
+      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
         <div className="relative border-l border-slate-800 ml-4 space-y-8">
-            {commits.map((commit) => (
-                <div key={commit.id} className="relative pl-8">
-                    {/* Dot on Timeline */}
-                    <div className={`
-                        absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-[#0f172a]
-                        ${commit.active ? 'bg-green-500' : 'bg-slate-600'}
-                    `} />
+            {auditLogs.map((log) => (
+                <div key={log.id} className="relative pl-8 group">
                     
+                    {/* Tool-Specific Indicator */}
+                    <div className={`
+                        absolute -left-[14px] top-1 w-7 h-7 rounded-lg border border-slate-800 flex items-center justify-center bg-[#0f172a]
+                        ${log.active ? 'ring-2 ring-blue-500/50' : ''}
+                    `}>
+                        <log.icon className={`w-3.5 h-3.5 ${log.color}`} />
+                    </div>
+
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${commit.active ? 'text-green-400' : 'text-slate-200'}`}>
-                                {commit.version}
+                            <span className={`text-xs font-bold uppercase tracking-tight ${log.active ? 'text-white' : 'text-slate-400'}`}>
+                                {log.tool}
                             </span>
-                            {commit.active && (
-                                <span className="text-[10px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded border border-green-500/20">
-                                    Current
+                            {log.active && (
+                                <span className="text-[9px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 font-bold uppercase">
+                                    Live State
                                 </span>
                             )}
-                            <span className="text-xs text-slate-500 ml-auto font-mono">{commit.time}</span>
+                            <span className="text-[10px] text-slate-600 ml-auto font-mono uppercase">{log.time}</span>
                         </div>
-                        
-                        <p className="text-sm text-slate-400 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-                            {commit.desc}
-                        </p>
 
-                        {!commit.active && (
+                        {/* Detailed Change Log */}
+                        <div className={`
+                            text-sm p-4 rounded-xl border transition-all
+                            ${log.active ? 'bg-blue-600/5 border-blue-500/20 text-slate-200' : 'bg-slate-900/50 border-slate-800 text-slate-400'}
+                        `}>
+                            <div className="flex items-center gap-2 mb-1">
+                                <GitCommit className="w-3 h-3 opacity-30" />
+                                <span className="font-mono text-[10px] opacity-50 uppercase">Hash: {Math.random().toString(16).slice(2, 8)}</span>
+                            </div>
+                            {log.desc}
+                        </div>
+
+                        {!log.active && (
                             <button 
-                                onClick={() => { triggerHaptic(); alert(`Restored to ${commit.version}`); }}
-                                className="self-start flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 mt-1 px-2 py-1 hover:bg-slate-800 rounded transition-colors"
+                                onClick={() => { triggerHaptic(); }}
+                                className="self-start flex items-center gap-1.5 text-[10px] font-bold text-blue-400 hover:text-white mt-2 px-3 py-1.5 bg-slate-800/50 hover:bg-blue-600 rounded-lg border border-slate-700 transition-all active:scale-95"
                             >
                                 <RotateCcw className="w-3 h-3" />
-                                Restore this version
+                                Revert Project to this State
                             </button>
                         )}
                     </div>
                 </div>
             ))}
         </div>
+      </div>
+
+      {/* --- FOOTER --- */}
+      <div className="p-4 bg-slate-950/50 border-t border-slate-800">
+         <p className="text-[9px] text-slate-500 leading-relaxed italic text-center uppercase tracking-tighter">
+            * All code changes are verified by the AI Design Critique before being committed to your project state.
+         </p>
       </div>
     </div>
   );
