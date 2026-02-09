@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
 import { clientPromise } from "@/lib/db"; 
 // import { redirect } from "next/navigation"; // Commented out for Dev Mode
-import { Plus, Search, Smartphone, Calendar, Package, ShieldAlert } from 'lucide-react';
+import { Plus, Smartphone, Package, ShieldAlert } from 'lucide-react';
 
 async function getProjects(userId) {
   try {
@@ -17,6 +17,7 @@ async function getProjects(userId) {
       .sort({ updatedAt: -1 })
       .toArray();
 
+    // SANITIZATION: Convert EVERYTHING to pure JSON strings to prevent crashes
     const safeProjects = projects.map(p => ({
       _id: p._id.toString(),
       userId: p.userId.toString(),
@@ -39,6 +40,7 @@ export default async function Dashboard() {
   const session = await getServerSession(authOptions);
 
   // --- DEV MODE: SECURITY DISABLED ---
+  // The redirect is commented out so the "Bypass Auth" button works
   // if (!session) {
   //   redirect('/api/auth/signin');
   // }
