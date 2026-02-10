@@ -17,8 +17,6 @@ RULES:
 export async function POST(req) {
   try {
     const { messages, projectFiles } = await req.json();
-    
-    // CRITICAL: Ensure this variable matches what you set in Vercel
     const apiKey = process.env.GEMINI_API_KEY; 
 
     if (!apiKey) {
@@ -34,9 +32,9 @@ export async function POST(req) {
 
     const fullPrompt = `${SYSTEM_PROMPT}\n\nCURRENT FILES:\n${fileContext}\n\nUSER COMMAND: ${latestUserMessage}`;
 
-    // 3. CALL GOOGLE GEMINI 2.0 FLASH (STABLE)
-    // FIXED: Changed model to 'gemini-2.0-flash' (Stable) instead of 'exp'
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    // 3. CALL GEMINI 2.5 FLASH
+    // UPDATED: Using 'gemini-2.5-flash' which matches your quota dashboard
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -54,11 +52,11 @@ export async function POST(req) {
     const data = await response.json();
     
     if (data.error) {
-      console.error("Gemini API Error Details:", JSON.stringify(data.error, null, 2));
-      throw new Error(`Gemini Error: ${data.error.message}`);
+      console.error("Gemini API Error:", JSON.stringify(data.error, null, 2));
+      throw new Error(data.error.message);
     }
 
-    // 4. PARSE GEMINI RESPONSE
+    // 4. PARSE RESPONSE
     const rawText = data.candidates[0].content.parts[0].text;
     const aiContent = JSON.parse(rawText);
 
@@ -67,7 +65,7 @@ export async function POST(req) {
   } catch (error) {
     console.error("Backend Handler Error:", error);
     return NextResponse.json(
-      { message: "Neural Link disrupted. Check Vercel logs.", error: error.message },
+      { message: "Neural Link disrupted. Check logs.", error: error.message },
       { status: 500 }
     );
   }
