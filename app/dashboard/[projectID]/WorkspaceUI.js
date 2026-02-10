@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { User, X, Settings } from "lucide-react"; 
+import { User, X, Settings, LogOut } from "lucide-react"; 
 
 // --- 1. CORE COMPONENTS ---
 import NavigationRail from "./components/NavigationRail";
@@ -104,29 +104,23 @@ export default function WorkspaceUI({ project }) {
     if (!fileName) return;
     setProjectFiles(prev => {
       if (!prev) return [];
-      // Check if file exists to update it
       const exists = prev.find(f => f.name === fileName);
       if (exists) {
           return prev.map(file => file.name === fileName ? { ...file, content: newContent } : file);
       }
-      // If it doesn't exist, Create it (New File)
-      // We assume it goes into the java path by default unless it's XML
       const defaultPath = fileName.endsWith('.xml') ? "app/src/main/res/layout/" : "app/src/main/java/";
       return [...prev, { name: fileName, content: newContent, path: defaultPath }];
     });
     triggerHaptic();
   }, []);
 
-  // --- 9. AI AGENT HANDLERS (UPDATED) ---
+  // --- 9. AI AGENT HANDLERS ---
   const executeAICommand = async (commandType, payload) => {
     triggerHaptic();
     switch(commandType) {
-      // UNIVERSAL HANDLER: Used by ChatInterface to handle everything
       case 'UPDATE_FILE':
         updateFile(payload.name, payload.content);
         break;
-        
-      // Legacy Handlers (kept for CloneVision/RepoConverter compatibility)
       case 'ADD_COMPONENT':
         if (payload.xml) updateFile("activity_main.xml", payload.xml);
         if (payload.kotlin) updateFile("MainActivity.kt", payload.kotlin);
@@ -161,12 +155,12 @@ export default function WorkspaceUI({ project }) {
 
   // --- 11. RENDER GUARDRAIL ---
   if (!projectFiles) {
-    return <div className="h-screen w-screen bg-[#020617] text-blue-500 flex items-center justify-center animate-pulse">Initializing Workspace...</div>;
+    return <div className="h-screen w-screen bg-black text-zinc-500 flex items-center justify-center animate-pulse font-mono text-sm">INITIALIZING NEURAL LINK...</div>;
   }
 
   return (
     <div 
-      className="flex flex-col w-full bg-[#020617] text-slate-300 font-sans overflow-hidden fixed inset-0" 
+      className="flex flex-col w-full bg-black text-zinc-300 font-sans overflow-hidden fixed inset-0 selection:bg-pink-500/30" 
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
       {/* HEADER */}
@@ -188,7 +182,7 @@ export default function WorkspaceUI({ project }) {
             triggerHaptic={triggerHaptic}
         />
 
-        <main className="flex-1 flex flex-col min-w-0 bg-[#020617] relative overflow-hidden border-l border-slate-800">
+        <main className="flex-1 flex flex-col min-w-0 bg-black relative overflow-hidden border-l border-zinc-800">
           
           {/* VIEW ROUTER */}
           {activeView === 'chat' && (
@@ -233,8 +227,8 @@ export default function WorkspaceUI({ project }) {
         </main>
       </div>
 
-      {/* HORIZON LINE */}
-      <div className="h-[1px] w-full bg-blue-500/20 shrink-0 z-[100] shadow-[0_0_10px_rgba(59,130,246,0.1)]" />
+      {/* HORIZON LINE - The Neon Gradient Pulse */}
+      <div className="h-[1px] w-full bg-gradient-to-r from-pink-500/50 via-purple-500/50 to-blue-500/50 shrink-0 z-[100] shadow-[0_0_15px_rgba(236,72,153,0.3)]" />
 
       {/* --- OVERLAYS --- */}
       <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
@@ -248,17 +242,25 @@ export default function WorkspaceUI({ project }) {
       {isProfileOpen && (
            <>
              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[100]" onClick={() => setIsProfileOpen(false)} />
-             <div className="absolute top-0 right-0 bottom-0 w-72 bg-[#020617] border-l border-slate-800 shadow-2xl z-[110] flex flex-col animate-in slide-in-from-right duration-300">
-                <div className="h-14 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 font-bold text-white">
+             <div className="absolute top-0 right-0 bottom-0 w-72 bg-black border-l border-zinc-800 shadow-2xl z-[110] flex flex-col animate-in slide-in-from-right duration-300">
+                <div className="h-14 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0 font-bold text-white bg-zinc-900/30">
                    User Profile
-                   <button onClick={() => setIsProfileOpen(false)} className="p-1 text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+                   <button onClick={() => setIsProfileOpen(false)} className="p-1 text-zinc-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="p-6 flex flex-col items-center">
-                    <div className="w-20 h-20 rounded-full bg-slate-900 border border-blue-500/30 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-                       <User className="w-8 h-8 text-blue-400" />
+                    <div className="w-20 h-20 rounded-full bg-black border border-zinc-800 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(59,130,246,0.2)] p-1 relative">
+                       <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-blue-500 rounded-full opacity-20" />
+                       <User className="w-8 h-8 text-zinc-200 relative z-10" />
                     </div>
                     <h3 className="font-bold text-white text-lg">Visionary Dev</h3>
-                    <p className="text-xs text-slate-500 font-mono mt-1">PRO TIER ACTIVE</p>
+                    <div className="mt-2 px-3 py-1 bg-gradient-to-r from-pink-500/10 to-blue-500/10 border border-pink-500/20 rounded-full">
+                       <p className="text-[10px] text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-blue-400 font-bold uppercase tracking-wide">Pro Tier Active</p>
+                    </div>
+                </div>
+                <div className="mt-auto p-6 border-t border-zinc-800">
+                    <button onClick={() => router.push('/login')} className="flex items-center gap-3 w-full p-3 rounded-xl bg-zinc-900/50 hover:bg-red-500/10 hover:text-red-400 text-zinc-400 transition-all text-sm font-medium">
+                        <LogOut className="w-4 h-4" /> Sign Out
+                    </button>
                 </div>
              </div>
            </>
@@ -266,12 +268,13 @@ export default function WorkspaceUI({ project }) {
 
       {/* EXIT DIALOG */}
       {isExitModalOpen && (
-        <div className="absolute inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center animate-in zoom-in-95">
+        <div className="absolute inset-0 z-[300] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center animate-in zoom-in-95">
             <h3 className="text-xl font-bold text-white mb-2">Exit Workspace?</h3>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setIsExitModalOpen(false)} className="flex-1 py-3 text-slate-300 font-bold bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors">Cancel</button>
-              <button onClick={() => { triggerHaptic(); router.push('/dashboard'); }} className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-600/20">Yes, Exit</button>
+            <p className="text-sm text-zinc-500 mb-6">Unsaved changes will be automatically synced.</p>
+            <div className="flex gap-3 mt-2">
+              <button onClick={() => setIsExitModalOpen(false)} className="flex-1 py-3 text-zinc-300 font-bold bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors text-sm">Cancel</button>
+              <button onClick={() => { triggerHaptic(); router.push('/dashboard'); }} className="flex-1 py-3 bg-red-600/10 hover:bg-red-600/20 border border-red-600/50 text-red-500 font-bold rounded-xl transition-colors shadow-lg text-sm">Yes, Exit</button>
             </div>
           </div>
         </div>
