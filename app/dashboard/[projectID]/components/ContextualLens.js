@@ -1,27 +1,63 @@
-import { Check, X, Sparkles } from "lucide-react";
+"use client";
 
-export default function ContextualLens({ onAccept, onReject, triggerHaptic }) {
+import { Scan, Hash, Maximize, Zap } from "lucide-react";
+
+export default function ContextualLens({ elements = [], mode = 'live' }) {
+  
+  // --- AR HUD MODE ---
+  if (mode === 'ar') {
+    return (
+      <div className="absolute inset-0 z-40 pointer-events-none flex flex-col items-center justify-center">
+        {/* Reticle */}
+        <div className="relative w-64 h-64 border border-blue-500/30 rounded-lg flex items-center justify-center">
+           <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-500" />
+           <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-500" />
+           <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-500" />
+           <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-500" />
+           
+           <Scan className="w-12 h-12 text-blue-500/50 animate-pulse" />
+        </div>
+        
+        {/* Data Stream */}
+        <div className="mt-8 font-mono text-[9px] text-blue-400 space-y-1 text-center">
+            <p>SURFACE: DETECTED</p>
+            <p>LIGHTING: 84% (OPTIMAL)</p>
+            <p>ANCHOR: LOCKED</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- UI INSPECTION MODE (Live) ---
   return (
-    <div className="absolute inset-x-4 bottom-4 z-[100] animate-in slide-in-from-bottom-10 duration-500">
-      <div className="bg-blue-600/90 backdrop-blur-xl border border-blue-400/30 p-4 rounded-[2rem] shadow-[0_20px_50px_rgba(59,130,246,0.5)] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h4 className="text-white font-bold text-xs uppercase">Ghost UI Layer</h4>
-            <p className="text-blue-100 text-[10px]">Swipe to merge this AI suggestion.</p>
-          </div>
+    <div className="absolute inset-0 z-40 pointer-events-none p-6 space-y-4">
+      {/* We map over the same elements the PreviewPane is rendering to create an overlay */}
+      {elements.map((el, i) => (
+        <div 
+          key={`lens-${i}`}
+          className="relative group border border-dashed border-purple-500/30 hover:border-purple-500/80 bg-purple-500/5 rounded-xl transition-all duration-300"
+        >
+            {/* The "Tag" that appears floating next to the element */}
+            <div className="absolute -right-2 -top-2 bg-purple-600 text-white text-[8px] font-mono px-1.5 py-0.5 rounded shadow-lg flex items-center gap-1 scale-0 group-hover:scale-100 transition-transform origin-bottom-left">
+                <Hash className="w-2 h-2" />
+                {el.id}
+            </div>
+            
+            {/* Invisible spacer to match the height of the actual element below it */}
+            <div className="h-10 w-full" /> 
+            
+            <div className="absolute bottom-1 left-2 text-[8px] text-purple-400 font-mono opacity-0 group-hover:opacity-100">
+               {el.type.toUpperCase()} NODE
+            </div>
         </div>
-
-        <div className="flex gap-2">
-           <button onClick={() => { triggerHaptic(); onReject(); }} className="w-10 h-10 bg-red-500/20 hover:bg-red-500 text-white rounded-full flex items-center justify-center border border-red-500/30 transition-all">
-             <X className="w-5 h-5" />
-           </button>
-           <button onClick={() => { triggerHaptic(); onAccept(); }} className="w-10 h-10 bg-green-500/20 hover:bg-green-500 text-white rounded-full flex items-center justify-center border border-green-500/30 transition-all">
-             <Check className="w-5 h-5" />
-           </button>
-        </div>
+      ))}
+      
+      {/* Global Stats */}
+      <div className="absolute top-2 right-2 flex flex-col items-end pointer-events-none">
+         <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-purple-500/30">
+            <Zap className="w-3 h-3 text-yellow-400" />
+            <span className="text-[9px] font-bold text-white">{elements.length} NODES RENDERED</span>
+         </div>
       </div>
     </div>
   );
