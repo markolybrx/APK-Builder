@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { User, X } from "lucide-react"; // Removed unused imports
+import { User, X } from "lucide-react";
 
-// --- CORE COMPONENTS ---
+// --- CORE COMPONENTS (These must exist) ---
 import NavigationRail from "./components/NavigationRail";
 import ChatInterface from "./components/ChatInterface";
 import FileExplorer from "./components/FileExplorer";
@@ -13,19 +13,19 @@ import Terminal from "./components/Terminal";
 import Header from "./components/Header";
 import HistoryView from "./components/HistoryView";
 import SettingsView from "./components/SettingsView";
-
-// --- ADVANCED LAYERS ---
-import RepoConverter from "./components/RepoConverter";
-import CloneVision from "./components/CloneVision";
-import QRShareModal from "./components/QRShareModal";
 import LogicMapView from "./components/LogicMapView";
-import WelcomeTour from "./components/WelcomeTour";
-import DebuggerView from "./components/DebuggerView"; 
+
+// --- ADVANCED LAYERS (DISABLED - CAUSING CRASHES) ---
+// Only uncomment these after you have created the files!
+// import RepoConverter from "./components/RepoConverter";
+// import CloneVision from "./components/CloneVision";
+// import QRShareModal from "./components/QRShareModal";
+// import WelcomeTour from "./components/WelcomeTour";
+// import DebuggerView from "./components/DebuggerView"; 
 
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
-  // --- GUARDRAIL: INITIAL VFS STATE ---
   const [projectFiles, setProjectFiles] = useState([
     { name: "MainActivity.kt", path: "app/src/main/java/", content: "// Initialized\npackage com.example.app\n\nimport android.os.Bundle\nimport androidx.appcompat.app.AppCompatActivity\n\nclass MainActivity : AppCompatActivity() {\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        setContentView(R.layout.activity_main)\n    }\n}" },
     { name: "activity_main.xml", path: "app/src/main/res/layout/", content: "<?xml version='1.0' encoding='utf-8'?>\n<LinearLayout xmlns:android='http://schemas.android.com/apk/res/android' android:layout_width='match_parent' android:layout_height='match_parent' android:orientation='vertical' android:gravity='center'>\n    <TextView android:text='Hello World!' android:layout_width='wrap_content' android:layout_height='wrap_content' />\n</LinearLayout>" },
@@ -34,9 +34,8 @@ export default function WorkspaceUI({ project }) {
 
   const [activeView, setActiveView] = useState('chat'); 
   const [previewMode, setPreviewMode] = useState('live'); 
-  const [showTour, setShowTour] = useState(false); 
 
-  // --- MODAL STATES ---
+  // Modal States (Keep these false for now)
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isConverterOpen, setIsConverterOpen] = useState(false); 
   const [isCloneOpen, setIsCloneOpen] = useState(false);
@@ -44,14 +43,13 @@ export default function WorkspaceUI({ project }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [messages, setMessages] = useState([
-    { role: 'ai', text: `VFS initialized for "${project?.name || 'new app'}". Ready for commands.` },
+    { role: 'ai', text: `System Online. VFS linked for "${project?.name || 'New Project'}".` },
   ]);
 
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
-  // --- RECONSTRUCTED REACTIVE UPDATE LOOP ---
   const updateFile = useCallback((fileName, newContent) => {
     if (!fileName) return;
     setProjectFiles(prev => {
@@ -74,8 +72,6 @@ export default function WorkspaceUI({ project }) {
         const newFileName = `${payload.name}Activity.kt`;
         setProjectFiles(prev => [...prev, { name: newFileName, path: "app/src/main/java/", content: payload.content }]);
         break;
-      default:
-        console.warn("AI System Error: Unrecognized Command", commandType);
     }
   };
 
@@ -97,7 +93,6 @@ export default function WorkspaceUI({ project }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // --- RENDER GUARDRAIL ---
   if (!projectFiles || projectFiles.length === 0) {
     return <div className="h-screen w-screen bg-[#020617] flex items-center justify-center font-mono text-blue-500 animate-pulse text-xs">RECONSTRUCTING VFS...</div>;
   }
@@ -108,11 +103,7 @@ export default function WorkspaceUI({ project }) {
   };
 
   return (
-    <div 
-      className="flex flex-col w-full bg-[#020617] text-slate-300 font-sans overflow-hidden fixed inset-0" 
-      style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
-    >
-      {/* HEADER: NOW FULLY CONNECTED */}
+    <div className="flex flex-col w-full bg-[#020617] text-slate-300 font-sans overflow-hidden fixed inset-0" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       <Header 
         project={project}
         triggerHaptic={triggerHaptic}
@@ -131,56 +122,24 @@ export default function WorkspaceUI({ project }) {
         />
 
         <main className="flex-1 flex flex-col min-w-0 bg-[#020617] relative overflow-hidden">
-          {activeView === 'chat' && (
-             <ChatInterface 
-                messages={messages} 
-                setMessages={setMessages}
-                projectFiles={projectFiles} 
-                onExecute={executeAICommand} 
-                setPreviewMode={(mode) => { setPreviewMode(mode); setActiveView('preview'); }}
-                triggerHaptic={triggerHaptic}
-             />
-          )}
-
-          {activeView === 'logic' && (
-             <LogicMapView 
-                projectFiles={projectFiles} 
-                onLogicUpdate={handleLogicUpdate}
-                triggerHaptic={triggerHaptic} 
-             />
-          )}
-
-          {activeView === 'files' && (
-             <FileExplorer files={projectFiles} /> 
-          )}
-
-          {activeView === 'preview' && (
-             <PreviewPane 
-                projectFiles={projectFiles} 
-                previewMode={previewMode}
-                setPreviewMode={setPreviewMode}
-                onResolveChange={(fileName, content) => updateFile(fileName, content)}
-                triggerHaptic={triggerHaptic}
-             />
-          )}
-
-          {activeView === 'debug' && <DebuggerView files={projectFiles} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />}
+          {activeView === 'chat' && <ChatInterface messages={messages} setMessages={setMessages} projectFiles={projectFiles} onExecute={executeAICommand} setPreviewMode={(mode) => { setPreviewMode(mode); setActiveView('preview'); }} triggerHaptic={triggerHaptic} />}
+          {activeView === 'logic' && <LogicMapView projectFiles={projectFiles} onLogicUpdate={handleLogicUpdate} triggerHaptic={triggerHaptic} />}
+          {activeView === 'files' && <FileExplorer files={projectFiles} />}
+          {activeView === 'preview' && <PreviewPane projectFiles={projectFiles} previewMode={previewMode} setPreviewMode={setPreviewMode} onResolveChange={(fileName, content) => updateFile(fileName, content)} triggerHaptic={triggerHaptic} />}
+          {/* DebuggerView Disabled */}
           {activeView === 'terminal' && <Terminal project={project} triggerHaptic={triggerHaptic} />}
           {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
           {activeView === 'settings' && <SettingsView project={project} triggerHaptic={triggerHaptic} />}
         </main>
       </div>
 
-      {/* HORIZON FOOTER */}
       <div className="h-[1px] w-full bg-blue-500/20 shrink-0 z-[100] shadow-[0_0_10px_rgba(59,130,246,0.1)]" />
 
-      {/* --- OVERLAYS --- */}
-      <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
-      <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} />
-      <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} />
-      {showTour && <WelcomeTour onComplete={() => setShowTour(false)} triggerHaptic={triggerHaptic} />}
-
-      {/* PROFILE DRAWER */}
+      {/* OVERLAYS DISABLED - Uncomment as you create files */}
+      {/* <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} /> */}
+      {/* <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} /> */}
+      {/* <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} /> */}
+      
       {isProfileOpen && (
            <>
              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[100]" onClick={() => setIsProfileOpen(false)} />
@@ -200,7 +159,6 @@ export default function WorkspaceUI({ project }) {
            </>
       )}
 
-      {/* EXIT DIALOG */}
       {isExitModalOpen && (
         <div className="absolute inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center animate-in zoom-in-95">
