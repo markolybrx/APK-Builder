@@ -34,9 +34,9 @@ export async function POST(req) {
 
     const fullPrompt = `${SYSTEM_PROMPT}\n\nCURRENT FILES:\n${fileContext}\n\nUSER COMMAND: ${latestUserMessage}`;
 
-    // 3. CALL GOOGLE GEMINI 2.0 FLASH API
-    // Updated to use 'gemini-2.0-flash-exp' which is the current available version for 2.0
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+    // 3. CALL GOOGLE GEMINI 2.0 FLASH (STABLE)
+    // FIXED: Changed model to 'gemini-2.0-flash' (Stable) instead of 'exp'
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -46,14 +46,13 @@ export async function POST(req) {
           parts: [{ text: fullPrompt }]
         }],
         generationConfig: {
-          responseMimeType: "application/json" // Forces Gemini to return pure JSON
+          responseMimeType: "application/json"
         }
       })
     });
 
     const data = await response.json();
     
-    // Enhanced Error Logging for Vercel
     if (data.error) {
       console.error("Gemini API Error Details:", JSON.stringify(data.error, null, 2));
       throw new Error(`Gemini Error: ${data.error.message}`);
@@ -68,7 +67,7 @@ export async function POST(req) {
   } catch (error) {
     console.error("Backend Handler Error:", error);
     return NextResponse.json(
-      { message: "Neural Link disrupted. Check Vercel logs for 'Gemini API Error'.", error: error.message },
+      { message: "Neural Link disrupted. Check Vercel logs.", error: error.message },
       { status: 500 }
     );
   }
