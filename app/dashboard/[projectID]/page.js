@@ -3,47 +3,48 @@ import { ObjectId } from "mongodb";
 import WorkspaceUI from "./WorkspaceUI"; 
 
 export default async function ProjectEditor({ params }) {
-  const { id } = params;
+  // FIX 1: Await params (Required for Next.js 15+)
+  const resolvedParams = await params; 
+  const id = resolvedParams?.id; // Ensure folder is named [id], not [projectId]
 
   let project = null;
 
-  // 1. Try to fetch the real project
   try {
     const client = await clientPromise;
     const db = client.db();
-    
-    // Only attempt query if ID looks valid (24 hex chars)
-    if (ObjectId.isValid(id)) {
+
+    if (id && ObjectId.isValid(id)) {
         const rawProject = await db.collection("projects").findOne({ _id: new ObjectId(id) });
+        
         if (rawProject) {
-            project = {
+            // FIX 2: Deep Sanitization
+            // This strips any remaining MongoDB objects (like Dates or nested ObjectIds)
+            // that cause "Client-side Exception" serialization errors.
+            project = JSON.parse(JSON.stringify({
                 ...rawProject,
                 _id: rawProject._id.toString(),
-                userId: rawProject.userId.toString(),
-                createdAt: rawProject.createdAt?.toISOString(),
-                updatedAt: rawProject.updatedAt?.toISOString(),
-            };
+                userId: rawProject.userId?.toString() || "unknown",
+            }));
         }
     }
   } catch (error) {
-    console.error("DB Error:", error);
+    console.error("❌ DB/Project Fetch Error:", error);
   }
 
-  // 2. FAILSAFE: If Project is still null (Not Found or DB Error), use Demo Data.
-  // This ensures you ALWAYS see the UI.
+  // FAILSAFE: Fallback for Invalid IDs, DB Errors, or Null Projects
   if (!project) {
-    console.log("Project not found, using Fallback Data");
+    console.warn(`⚠️ Project "${id}" not found or invalid. Loading Demo Mode.`);
     project = {
       _id: "demo-mode-id",
       userId: "demo-user",
       name: "Untitled App (Demo)",
       packageName: "com.example.demo",
-      description: "Could not fetch real project. Showing demo UI to debug layout.",
+      type: "Android Native",
+      description: "Demo Mode Active. Database connection may be failing.",
       createdAt: new Date().toISOString(),
-      isDemo: true // Flag to show a warning banner
+      isDemo: true
     };
   }
 
-  // 3. Render the UI
   return <WorkspaceUI project={project} />;
 }
