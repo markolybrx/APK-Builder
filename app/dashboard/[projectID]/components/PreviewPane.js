@@ -1,218 +1,135 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
-import { 
-    Play, MousePointer2, PenTool, Camera, 
-    Smartphone, Activity, Circle, Sparkles, Eye, ScanLine 
-} from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Smartphone, RotateCcw, Eye, Code2, Maximize2 } from "lucide-react";
 
-// --- ADVANCED LAYERS (Enabled) ---
-import DesignCritique from "./DesignCritique"; 
-import ContextualLens from "./ContextualLens"; 
+export default function PreviewPane({ projectFiles, previewMode, setPreviewMode, triggerHaptic }) {
+  const [scale, setScale] = useState(1);
 
-// --- FUTURE LAYERS (Disabled for Stability) ---
-// import SensorBridge from "./SensorBridge"; 
-// import BehaviorRecorder from "./BehaviorRecorder"; 
-
-export default function PreviewPane({ 
-  projectFiles = [], 
-  previewMode, 
-  setPreviewMode, 
-  onResolveChange, 
-  triggerHaptic 
-}) {
-  const videoRef = useRef(null); 
-  
-  // --- LAYER STATES ---
-  const [isRecordingMode, setIsRecordingMode] = useState(false);
-  const [isCritiqueOpen, setIsCritiqueOpen] = useState(false);
-  const [isLensActive, setIsLensActive] = useState(false);
-
-  // --- 1. VIRTUAL XML RENDERER ---
-  // Parses raw XML into interactive virtual DOM elements
-  const renderedUI = useMemo(() => {
-    if (!projectFiles || !Array.isArray(projectFiles)) return [];
-
-    const mainFile = projectFiles.find(f => f.name === "activity_main.xml");
-    const mainXml = mainFile?.content || ""; 
-
-    const elements = [];
-    const buttonMatches = [...mainXml.matchAll(/<Button[^>]*android:text="([^"]*)"[^>]*\/>/g)];
-    const textMatches = [...mainXml.matchAll(/<TextView[^>]*android:text="([^"]*)"[^>]*\/>/g)];
-
-    buttonMatches.forEach((m, i) => elements.push({ type: 'button', text: m[1], id: `btn_${i}` }));
-    textMatches.forEach((m, i) => elements.push({ type: 'text', text: m[1], id: `txt_${i}` }));
-
-    return elements;
+  // 1. EXTRACT THE ACTIVE LAYOUT
+  // We look for the most recently modified XML file, or default to activity_main.xml
+  const activeLayout = useMemo(() => {
+    return projectFiles.find(f => f.name.endsWith('.xml'))?.content || "";
   }, [projectFiles]);
 
-  // --- 2. HARDWARE STABILIZATION (AR Camera) ---
-  useEffect(() => {
-    let stream = null;
-    async function startCamera() {
-      if (previewMode === 'ar') {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-          if (videoRef.current) videoRef.current.srcObject = stream;
-        } catch (err) { 
-          console.error("Hardware Permission Blocked:", err); 
-        }
+  // 2. XML TO HTML TRANSPILER (The "Magic" Engine)
+  // This is a simplified parser to visualize Android layouts in a Web Browser
+  const renderXML = (xmlString) => {
+    if (!xmlString) return <div className="text-slate-500">No Layout Found</div>;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlString, "text/xml");
+    const root = doc.documentElement;
+
+    if (root.nodeName === "parsererror") return <div className="text-red-500">XML Syntax Error</div>;
+
+    const parseNode = (node, index) => {
+      if (node.nodeType !== 1) return null; // Skip non-elements
+
+      const androidWidth = node.getAttribute("android:layout_width");
+      const androidHeight = node.getAttribute("android:layout_height");
+      const bgColor = node.getAttribute("android:background") || "transparent";
+      const text = node.getAttribute("android:text") || "";
+      const textSize = node.getAttribute("android:textSize") || "14px";
+      const textColor = node.getAttribute("android:textColor") || "#000";
+      const orientation = node.getAttribute("android:orientation") || "vertical";
+      const gravity = node.getAttribute("android:gravity") || "top";
+      const padding = node.getAttribute("android:padding") || "0px";
+
+      // Map Android Styles to CSS
+      const style = {
+        display: "flex",
+        flexDirection: orientation === "vertical" ? "column" : "row",
+        width: androidWidth === "match_parent" ? "100%" : "auto",
+        height: androidHeight === "match_parent" ? "100%" : "auto",
+        backgroundColor: bgColor.replace("@color/", "var(--"), // basic resource mapping
+        padding: padding,
+        color: textColor,
+        fontSize: textSize.replace("sp", "px"),
+        justifyContent: gravity.includes("center") ? "center" : "flex-start",
+        alignItems: gravity.includes("center") ? "center" : "stretch",
+        gap: "8px",
+        border: "1px dashed rgba(59, 130, 246, 0.2)", // Debug outline
+        position: "relative",
+      };
+
+      // Handle specific widgets
+      if (node.nodeName === "TextView") {
+        return <div key={index} style={style}>{text}</div>;
       }
-    }
-    startCamera();
-    return () => stream?.getTracks().forEach(t => t.stop());
-  }, [previewMode]);
+      if (node.nodeName === "Button") {
+        return (
+            <button key={index} className="px-4 py-2 bg-blue-600 text-white rounded shadow-md font-bold uppercase text-sm">
+                {text || "Button"}
+            </button>
+        );
+      }
+      if (node.nodeName === "ImageView") {
+         return <div key={index} className="w-12 h-12 bg-slate-300 rounded flex items-center justify-center text-[8px]">IMG</div>;
+      }
+
+      // Recursive render for containers (LinearLayout, etc)
+      return (
+        <div key={index} style={style} className={`android-${node.nodeName.toLowerCase()}`}>
+           {Array.from(node.childNodes).map((child, i) => parseNode(child, i))}
+        </div>
+      );
+    };
+
+    return parseNode(root, 0);
+  };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#020617] text-slate-300 relative overflow-hidden">
-
-      {/* 1. PINNED TOOLBAR */}
-      <div className="h-14 border-b border-slate-800 flex items-center justify-between px-4 bg-[#020617] shrink-0 z-20 select-none">
-        
-        {/* Mode Switcher */}
-        <div className="flex bg-slate-900/50 rounded-lg p-1 border border-slate-800 overflow-x-auto no-scrollbar gap-1">
-          <ModeBtn mode="live" current={previewMode} set={setPreviewMode} icon={Play} label="Live" />
-          <ModeBtn mode="design" current={previewMode} set={setPreviewMode} icon={MousePointer2} label="Edit" />
-          <ModeBtn mode="ar" current={previewMode} set={setPreviewMode} icon={Camera} label="AR" />
-          <ModeBtn mode="sensors" current={previewMode} set={setPreviewMode} icon={Activity} label="Sensors" />
-        </div>
-
-        {/* AI Tools (Critique, Lens, Record) */}
-        <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
-            {/* Contextual Lens Toggle */}
-            <button 
-                onClick={() => { setIsLensActive(!isLensActive); triggerHaptic?.(); }}
-                className={`p-2 rounded-lg transition-all ${isLensActive ? 'bg-purple-500/20 text-purple-400' : 'text-slate-500 hover:text-white'}`}
-                title="Toggle Contextual Lens"
-            >
-                <Eye className="w-4 h-4" />
-            </button>
-
-            {/* Design Critique Trigger */}
-            <button 
-                onClick={() => { setIsCritiqueOpen(true); triggerHaptic?.(); }}
-                className="p-2 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all"
-                title="AI Design Critique"
-            >
-                <Sparkles className="w-4 h-4" />
-            </button>
-
-            {/* Behavior Recorder (Visual Only for now) */}
-            <button 
-                onClick={() => { setIsRecordingMode(!isRecordingMode); triggerHaptic?.(); }}
-                className={`p-2 rounded-lg transition-all ${isRecordingMode ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-slate-500 hover:text-white'}`}
-                title="Record Interaction"
-            >
-                <Circle className="w-4 h-4 fill-current" />
-            </button>
-        </div>
+    <div className="h-full flex flex-col bg-[#0f172a] border-l border-slate-800 relative overflow-hidden">
+      
+      {/* HEADER */}
+      <div className="h-12 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900/50 backdrop-blur">
+         <div className="flex bg-slate-800/50 rounded-lg p-1">
+             <button 
+                onClick={() => setPreviewMode('live')}
+                className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${previewMode === 'live' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+             >
+                <Eye className="w-3 h-3 inline mr-1" /> LIVE
+             </button>
+             <button 
+                onClick={() => setPreviewMode('code')}
+                className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${previewMode === 'code' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+             >
+                <Code2 className="w-3 h-3 inline mr-1" /> XML
+             </button>
+         </div>
+         <button onClick={() => setScale(scale > 1 ? 1 : 1.5)} className="text-slate-500 hover:text-white"><Maximize2 className="w-4 h-4" /></button>
       </div>
 
-      <div className="flex-1 relative overflow-y-auto bg-[#020617] custom-scrollbar">
+      {/* VIEWPORT AREA */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
+        
+        {/* PHONE FRAME */}
+        <div 
+            className="w-[320px] h-[640px] bg-black rounded-[3rem] border-8 border-slate-900 shadow-2xl relative overflow-hidden transition-all duration-500"
+            style={{ transform: `scale(${scale})` }}
+        >
+            {/* Dynamic Notch */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-xl z-20" />
 
-        {/* 2. DYNAMIC LIVE RENDERER */}
-        {(previewMode === 'live' || previewMode === 'design') && (
-          <div className="min-h-full flex items-center justify-center p-6 bg-[radial-gradient(circle_at_center,_#0f172a_0%,_#020617_100%)]">
-             <div className="w-full max-w-[280px] aspect-[9/19] bg-white rounded-[2.5rem] border-[10px] border-slate-900 shadow-[0_0_50px_rgba(0,0,0,0.6)] relative overflow-hidden flex flex-col ring-1 ring-white/5">
-
-                {/* Status Bar */}
-                <div className="h-8 bg-slate-100 flex items-end justify-center pb-2 px-6 shrink-0 z-10">
-                    <div className="w-16 h-4 bg-black rounded-full" />
-                </div>
-
-                {/* LIVE VFS CONTENT AREA */}
-                <div className="flex-1 p-6 space-y-4 overflow-y-auto bg-white custom-scrollbar relative">
-                   {renderedUI.length === 0 ? (
-                     <div className="h-full flex flex-col items-center justify-center text-slate-300 transition-opacity">
-                        <Smartphone className="w-10 h-10 mb-3 opacity-10" />
-                        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Void Layout</p>
-                     </div>
-                   ) : (
-                     renderedUI.map((el) => (
-                       <div key={el.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                         {el.type === 'button' ? (
-                           <button className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-500/30 active:scale-95 transition-all">
-                             {el.text}
-                           </button>
-                         ) : (
-                           <p className="text-slate-800 text-center text-sm font-semibold tracking-tight">{el.text}</p>
-                         )}
-                       </div>
-                     ))
-                   )}
-                   
-                   {/* Contextual Lens Overlay (Live Mode) */}
-                   {isLensActive && (
-                     <div className="absolute inset-0 z-20 pointer-events-none">
-                        <ContextualLens elements={renderedUI} />
-                     </div>
-                   )}
-                </div>
-
-                {/* Recorder Overlay */}
-                {isRecordingMode && (
-                  <div className="absolute inset-0 bg-red-500/5 backdrop-blur-[1px] z-30 pointer-events-none border-4 border-red-500/20 rounded-[2rem] flex items-center justify-center">
-                      <div className="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full animate-pulse">REC</div>
-                  </div>
-                )}
-             </div>
-          </div>
-        )}
-
-        {/* 3. AR MODE WITH LENS */}
-        {previewMode === 'ar' && (
-          <div className="absolute inset-0 bg-black flex items-center justify-center">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-60" />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                {isLensActive ? (
-                    <ContextualLens mode="ar" />
+            {/* SCREEN CONTENT */}
+            <div className="absolute inset-0 bg-white overflow-y-auto pt-8">
+                {previewMode === 'live' ? (
+                    <div className="min-h-full w-full">
+                        {renderXML(activeLayout)}
+                    </div>
                 ) : (
-                    <div className="w-64 h-64 border-2 border-dashed border-blue-500/40 rounded-3xl animate-pulse flex items-center justify-center">
-                        <ScanLine className="w-8 h-8 text-blue-500/50" />
+                    <div className="p-4 bg-[#0a0a0a] min-h-full">
+                        <pre className="text-[10px] font-mono text-green-400 whitespace-pre-wrap">{activeLayout}</pre>
                     </div>
                 )}
             </div>
-          </div>
-        )}
-
-        {/* 4. SENSORS (Placeholder) */}
-        {previewMode === 'sensors' && (
-            <div className="p-6 flex items-center justify-center h-full text-slate-500 font-mono text-xs">
-                SENSOR BRIDGE DISCONNECTED
-            </div>
-        )}
-
-        {/* 5. CRITIQUE MODAL (Global Overlay) */}
-        {isCritiqueOpen && (
-            <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in">
-                <DesignCritique 
-                    projectFiles={projectFiles}
-                    onClose={() => setIsCritiqueOpen(false)} 
-                    onAutoFix={(fixedXml) => {
-                        onResolveChange("activity_main.xml", fixedXml);
-                        setIsCritiqueOpen(false);
-                    }}
-                    triggerHaptic={triggerHaptic}
-                />
-            </div>
-        )}
+            
+            {/* Android Navigation Bar */}
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-400/50 rounded-full" />
+        </div>
 
       </div>
     </div>
-  );
-}
-
-function ModeBtn({ mode, current, set, icon: Icon, label }) {
-  const active = current === mode;
-  return (
-    <button 
-      onClick={() => set(mode)} 
-      className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all shrink-0
-        ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-500 hover:text-white hover:bg-slate-800'}
-      `}
-    >
-      <Icon className="w-3.5 h-3.5" />
-      <span className="text-[9px] font-bold uppercase tracking-tight">{label}</span>
-    </button>
   );
 }
