@@ -25,19 +25,18 @@ export default function ChatInterface({
     const text = textOverride || inputValue;
     if (!text.trim() || isLoading) return;
 
-    // 1. OPTIMISTIC UPDATE (Show User Message)
+    // 1. OPTIMISTIC UPDATE
     triggerHaptic?.();
     setMessages(prev => [...prev, { role: 'user', text: text }]);
     setInputValue("");
     setIsLoading(true);
 
     try {
-        // 2. CONNECT TO NEURAL BACKEND
+        // 2. CONNECT TO GEMINI BACKEND
         const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                // Send history + current prompt + full file context
                 messages: [...messages, { role: 'user', text: text }],
                 projectFiles: projectFiles 
             })
@@ -50,21 +49,18 @@ export default function ChatInterface({
         // 3. PROCESS AI RESPONSE
         setMessages(prev => [...prev, { role: 'ai', text: data.message }]);
 
-        // 4. APPLY CODE CHANGES
+        // 4. APPLY CODE CHANGES (UNIVERSAL HANDLER)
         if (data.files && Array.isArray(data.files)) {
             data.files.forEach(file => {
-                 // Determine if it's XML or Kotlin based on extension
-                 if (file.name.endsWith('.xml')) {
-                     onExecute('ADD_COMPONENT', { xml: file.content });
-                 } else if (file.name.endsWith('.kt')) {
-                     onExecute('ADD_COMPONENT', { kotlin: file.content });
-                 }
-                 // If it's a new file entirely
-                 else {
-                    onExecute('CREATE_PAGE', { name: file.name.replace('.kt','').replace('.xml',''), content: file.content });
-                 }
+                 // We pass the EXACT filename and content from AI to the Workspace
+                 // This handles both NEW files and UPDATES to existing ones
+                 onExecute('UPDATE_FILE', { 
+                    name: file.name, 
+                    content: file.content 
+                 });
             });
-            // Switch to preview to show the result
+            
+            // Force the Preview to switch to 'Live' mode so you see the changes immediately
             setPreviewMode('live'); 
         }
 
@@ -89,7 +85,6 @@ export default function ChatInterface({
                     ? 'bg-blue-600 text-white rounded-br-none' 
                     : 'bg-slate-900 border border-slate-800 text-slate-300 rounded-bl-none'
                 }`}>
-              {/* Optional: Render Markdown here if you want bold text */}
               {msg.text}
             </div>
           </div>
@@ -100,7 +95,7 @@ export default function ChatInterface({
             <div className="flex justify-start animate-in fade-in">
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-bl-none p-4 flex items-center gap-3">
                     <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                    <span className="text-xs text-slate-400 font-mono animate-pulse">Generating code...</span>
+                    <span className="text-xs text-slate-400 font-mono animate-pulse">Visionary AI is coding...</span>
                 </div>
             </div>
         )}
@@ -118,7 +113,7 @@ export default function ChatInterface({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             disabled={isLoading}
-            placeholder={isLoading ? "Visionary AI is thinking..." : "Describe a feature (e.g. 'Add a Login Screen')..."}
+            placeholder={isLoading ? "Generating logic..." : "Describe a feature (e.g. 'Add a Login Screen')..."}
             className="flex-1 bg-slate-900 border border-slate-800 text-white rounded-xl pl-10 pr-4 py-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all disabled:opacity-50"
           />
           
