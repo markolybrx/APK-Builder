@@ -1,20 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  X, CheckCircle2, AlertTriangle, 
-  Wand2, ScanLine, Loader2 
-} from "lucide-react";
+import { X, AlertTriangle, Wand2, ScanLine, Loader2 } from "lucide-react";
 
 export default function DesignCritique({ projectFiles, onClose, onAutoFix, triggerHaptic }) {
   const [status, setStatus] = useState('scanning'); // scanning | complete | fixing
 
-  // Simulate AI Analysis Delay
   useEffect(() => {
+    // Simulate AI Analysis
     const timer = setTimeout(() => {
       setStatus('complete');
       triggerHaptic?.();
-    }, 2000);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -22,7 +19,7 @@ export default function DesignCritique({ projectFiles, onClose, onAutoFix, trigg
     triggerHaptic?.();
     setStatus('fixing');
     
-    // THE AI "FIX": A cleaner, better-styled version of the XML
+    // The "Fixed" XML Payload
     const improvedXml = `<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -34,22 +31,21 @@ export default function DesignCritique({ projectFiles, onClose, onAutoFix, trigg
 
     <TextView
         android:id="@+id/welcome_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:text="Visionary App"
-        android:textSize="24sp"
+        android:textSize="28sp"
         android:textColor="#FFFFFF"
         android:textStyle="bold"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="32dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
     <Button
         android:id="@+id/btn_primary"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
         android:text="Get Started"
         android:backgroundTint="#3B82F6"
         android:textColor="#FFFFFF"
-        android:textSize="16sp" />
+        android:layout_width="match_parent"
+        android:layout_height="60dp" />
         
 </LinearLayout>`;
 
@@ -60,21 +56,19 @@ export default function DesignCritique({ projectFiles, onClose, onAutoFix, trigg
 
   return (
     <div className="w-full max-w-md bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95">
-      
-      {/* HEADER */}
+      {/* Header */}
       <div className="h-14 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between px-6">
         <div className="flex items-center gap-2">
             <ScanLine className={`w-4 h-4 ${status === 'scanning' ? 'text-blue-500 animate-pulse' : 'text-green-500'}`} />
             <span className="font-bold text-white text-xs uppercase tracking-widest">
-                {status === 'scanning' ? 'AI Analyzing UI...' : 'Critique Report'}
+                {status === 'scanning' ? 'AI Analyzing...' : 'Report Ready'}
             </span>
         </div>
         <button onClick={onClose} className="text-slate-500 hover:text-white"><X className="w-4 h-4" /></button>
       </div>
 
-      {/* BODY */}
+      {/* Body */}
       <div className="p-6 min-h-[200px] flex flex-col justify-center">
-        
         {status === 'scanning' && (
             <div className="flex flex-col items-center gap-4 text-center">
                 <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -88,15 +82,7 @@ export default function DesignCritique({ projectFiles, onClose, onAutoFix, trigg
                     <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
                     <div>
                         <h4 className="text-yellow-500 font-bold text-xs uppercase mb-1">Contrast Issue</h4>
-                        <p className="text-slate-400 text-[10px] leading-relaxed">The default button color lacks sufficient contrast against the background. Recommended: Neon Blue (#3B82F6).</p>
-                    </div>
-                </div>
-
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-                    <div>
-                        <h4 className="text-red-500 font-bold text-xs uppercase mb-1">Touch Target</h4>
-                        <p className="text-slate-400 text-[10px] leading-relaxed">Standard buttons should have at least 16dp padding for mobile accessibility.</p>
+                        <p className="text-slate-400 text-[10px]">Button color lacks contrast. Recommended: Neon Blue (#3B82F6).</p>
                     </div>
                 </div>
             </div>
@@ -105,21 +91,17 @@ export default function DesignCritique({ projectFiles, onClose, onAutoFix, trigg
         {status === 'fixing' && (
             <div className="flex flex-col items-center gap-4 text-center">
                 <Wand2 className="w-8 h-8 text-purple-500 animate-bounce" />
-                <p className="text-purple-400 text-xs font-mono">Refactoring XML Layout...</p>
+                <p className="text-purple-400 text-xs font-mono">Refactoring XML...</p>
             </div>
         )}
-
       </div>
 
-      {/* FOOTER */}
+      {/* Footer */}
       {status === 'complete' && (
           <div className="p-4 bg-slate-900 border-t border-slate-800 flex gap-3">
-            <button onClick={onClose} className="flex-1 py-3 text-xs font-bold text-slate-400 hover:text-white transition-colors">Dismiss</button>
-            <button 
-                onClick={handleFix}
-                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-            >
-                <Wand2 className="w-3 h-3" /> Auto-Fix Issues
+            <button onClick={onClose} className="flex-1 py-3 text-xs font-bold text-slate-400 hover:text-white">Dismiss</button>
+            <button onClick={handleFix} className="flex-1 py-3 bg-blue-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-500">
+                <Wand2 className="w-3 h-3" /> Auto-Fix
             </button>
           </div>
       )}
