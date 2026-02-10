@@ -5,61 +5,81 @@ import { Bug, CheckCircle2, AlertTriangle, XCircle, FileCode } from "lucide-reac
 
 export default function DebuggerView({ files = [], onUpdateFile, triggerHaptic }) {
   
-  // Real-time Static Analysis of the VFS
+  // REAL-TIME STATIC ANALYSIS
   const issues = useMemo(() => {
     const foundIssues = [];
-    const xmlFile = files.find(f => f.name.endsWith('.xml'))?.content || "";
-    const ktFile = files.find(f => f.name.endsWith('.kt'))?.content || "";
-
-    // 1. Check for missing IDs in Kotlin
-    const xmlIds = [...xmlFile.matchAll(/android:id="\@\+id\/([^"]+)"/g)].map(m => m[1]);
     
-    xmlIds.forEach(id => {
-        if (!ktFile.includes(id) && !ktFile.includes(`R.id.${id}`)) {
-            foundIssues.push({
+    // 1. Gather all XML IDs across all layout files
+    const declaredIds = new Set();
+    files.filter(f => f.name.endsWith('.xml')).forEach(file => {
+        const matches = [...file.content.matchAll(/android:id="\@\+id\/([^"]+)"/g)];
+        matches.forEach(m => declaredIds.add(m[1]));
+    });
+
+    // 2. Scan Kotlin files for references
+    files.filter(f => f.name.endsWith('.kt')).forEach(file => {
+        // Check for findViewById calls
+        const references = [...file.content.matchAll(/R\.id\.([a-zA-Z0-9_]+)/g)];
+        
+        references.forEach(match => {
+            const idRef = match[1];
+            if (!declaredIds.has(idRef)) {
+                foundIssues.push({
+                    severity: 'error',
+                    file: file.name,
+                    msg: `Missing View ID: '${idRef}' referenced in Kotlin but not found in any XML layout.`,
+                });
+            }
+        });
+
+        // Check for Empty Activity
+        if (file.content.includes("class MainActivity") && !file.content.includes("setContentView")) {
+             foundIssues.push({
                 severity: 'warning',
-                file: 'MainActivity.kt',
-                msg: `Unused View ID: '${id}' is defined in XML but not referenced in Kotlin.`,
-                line: 12
+                file: file.name,
+                msg: `Activity declared without 'setContentView'. UI will be blank.`,
             });
         }
     });
 
-    // 2. Check for Hardcoded Strings
-    if (xmlFile.includes('android:text="')) {
-        foundIssues.push({
-            severity: 'error',
-            file: 'activity_main.xml',
-            msg: 'Hardcoded string detected. Use @string/ resource instead.',
-            line: 5
-        });
-    }
+    // 3. Scan XML for UX Issues
+    files.filter(f => f.name.endsWith('.xml')).forEach(file => {
+        if (file.content.includes("ConstraintLayout") && !file.content.includes("app:layout_")) {
+             foundIssues.push({
+                severity: 'warning',
+                file: file.name,
+                msg: `ConstraintLayout used but views lack constraints. Elements may jump to (0,0).`,
+            });
+        }
+    });
 
     return foundIssues;
   }, [files]);
 
   return (
     <div className="flex flex-col h-full bg-[#0a0a0a] text-slate-300">
-      <div className="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-[#0f172a]">
+      <div className="h-12 border-b border-slate-800 flex items-center justify-between px-6 bg-[#0f172a] shrink-0">
          <div className="flex items-center gap-2 font-bold text-white">
             <Bug className="w-5 h-5 text-red-500" />
             <span>Lint & Debug</span>
          </div>
-         <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500">{issues.length} ISSUES FOUND</span>
-         </div>
+         <span className={`text-[10px] font-bold px-2 py-1 rounded ${issues.length > 0 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+            {issues.length} ISSUES
+         </span>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
          {issues.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 opacity-50">
-                <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
-                <h3 className="text-lg font-bold text-white">All Systems Operational</h3>
-                <p className="text-sm text-slate-500">No static analysis errors detected.</p>
+            <div className="flex flex-col items-center justify-center h-full opacity-50 space-y-4">
+                <CheckCircle2 className="w-16 h-16 text-green-500" />
+                <div className="text-center">
+                    <h3 className="text-lg font-bold text-white">All Systems Operational</h3>
+                    <p className="text-sm text-slate-500">Static analysis found 0 compilation errors.</p>
+                </div>
             </div>
          ) : (
              issues.map((issue, i) => (
-                <div key={i} className={`p-4 rounded-xl border flex gap-4 ${issue.severity === 'error' ? 'bg-red-500/5 border-red-500/20' : 'bg-yellow-500/5 border-yellow-500/20'}`}>
+                <div key={i} className={`p-4 rounded-xl border flex gap-4 ${issue.severity === 'error' ? 'bg-red-500/5 border-red-500/20' : 'bg-yellow-500/5 border-yellow-500/20'} animate-in slide-in-from-left-2`}>
                     <div className="mt-1">
                         {issue.severity === 'error' ? <XCircle className="w-5 h-5 text-red-500" /> : <AlertTriangle className="w-5 h-5 text-yellow-500" />}
                     </div>
@@ -72,7 +92,7 @@ export default function DebuggerView({ files = [], onUpdateFile, triggerHaptic }
                                 <FileCode className="w-3 h-3" /> {issue.file}
                             </span>
                         </div>
-                        <p className="text-sm text-slate-200 font-medium">{issue.msg}</p>
+                        <p className="text-sm text-slate-200 font-medium leading-relaxed">{issue.msg}</p>
                     </div>
                 </div>
              ))
