@@ -1,35 +1,40 @@
+"use client";
+
 import { useState } from "react";
-import { Sparkles, Share2, ScanLine, Smartphone, ChevronRight, Activity, Terminal as TerminalIcon } from "lucide-react";
+import { ArrowRight, X, Sparkles, Box, Layout, Smartphone } from "lucide-react";
 
 export default function WelcomeTour({ onComplete, triggerHaptic }) {
   const [step, setStep] = useState(0);
 
-  // --- UPDATED STEPS: Highlighting Functional Reality ---
   const steps = [
-    { 
-      title: "AI Brain Activated", 
-      desc: "Chat is now connected to the File System. Ask me to 'add a button' and watch the Explorer update in real-time.", 
-      icon: Sparkles, 
-      color: "text-blue-400" 
+    {
+      title: "Welcome to Visionary",
+      desc: "You are now in the Architect Workspace. This is where AI meets native mobile engineering.",
+      icon: Sparkles,
+      color: "text-blue-400"
     },
-    { 
-      title: "Real Hardware Bridge", 
-      desc: "Tap 'Sensors' to link your phone's real GPS and Accelerometer directly to your app logic.", 
-      icon: Activity, 
-      color: "text-green-400" 
+    {
+      title: "The Neural Chat",
+      desc: "On the left is your AI partner. Command it to 'Add a login button' or 'Create a profile page' to generate real code.",
+      icon: Box,
+      color: "text-purple-400"
     },
-    { 
-      title: "Live Build Shell", 
-      desc: "Run 'gradle build' in the terminal to simulate a real APK compilation and see your build logs.", 
-      icon: TerminalIcon, 
-      color: "text-purple-400" 
+    {
+      title: "Live Preview Engine",
+      desc: "On the right is the Pixel-Perfect Renderer. Switch between 'Live', 'Design', and 'AR' modes to test your app instantly.",
+      icon: Smartphone,
+      color: "text-green-400"
+    },
+    {
+      title: "Logic & VFS",
+      desc: "Use the Logic Map to visualize navigation flows, or dive into the File Explorer to edit the raw Kotlin & XML.",
+      icon: Layout,
+      color: "text-orange-400"
     }
   ];
 
-  const current = steps[step];
-
   const handleNext = () => {
-    triggerHaptic();
+    triggerHaptic?.();
     if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
@@ -37,43 +42,48 @@ export default function WelcomeTour({ onComplete, triggerHaptic }) {
     }
   };
 
+  const CurrentIcon = steps[step].icon;
+
   return (
-    <div className="fixed inset-0 z-[400] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-500">
-      <div className="bg-slate-900 border border-slate-700/50 w-full max-w-sm rounded-[3rem] p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative text-center">
-        
-        {/* Step Indicator Dots */}
-        <div className="flex justify-center gap-2 mb-8">
-            {steps.map((_, i) => (
-                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? 'w-8 bg-blue-500' : 'w-2 bg-slate-800'}`} />
-            ))}
-        </div>
+    <div className="absolute inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in">
+       <div className="w-full max-w-md bg-[#0f172a] border border-slate-800 rounded-2xl shadow-2xl relative overflow-hidden flex flex-col">
+          
+          {/* Progress Bar */}
+          <div className="h-1 bg-slate-800 w-full">
+            <div 
+                className="h-full bg-blue-500 transition-all duration-500 ease-out" 
+                style={{ width: `${((step + 1) / steps.length) * 100}%` }} 
+            />
+          </div>
 
-        <div className="w-24 h-24 rounded-[2rem] bg-slate-950 border border-slate-800 flex items-center justify-center mx-auto mb-8 shadow-inner relative">
-           <div className={`absolute inset-0 blur-2xl opacity-20 ${current.color.replace('text', 'bg')}`} />
-           <current.icon className={`w-12 h-12 relative z-10 ${current.color}`} />
-        </div>
+          <div className="p-8 flex flex-col items-center text-center min-h-[320px]">
+             {/* Icon Animation */}
+             <div className="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mb-6 border border-slate-800 shadow-xl mb-8 relative">
+                <div className="absolute inset-0 bg-blue-500/10 rounded-full animate-ping" />
+                <CurrentIcon className={`w-10 h-10 ${steps[step].color} transition-all duration-300 transform scale-100`} />
+             </div>
 
-        <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">{current.title}</h3>
-        <p className="text-slate-400 text-sm leading-relaxed mb-12 px-2">
-          {current.desc}
-        </p>
+             <h2 className="text-2xl font-bold text-white mb-3 animate-in slide-in-from-bottom-2 fade-in fill-mode-both delay-100">
+                {steps[step].title}
+             </h2>
+             
+             <p className="text-slate-400 leading-relaxed text-sm animate-in slide-in-from-bottom-3 fade-in fill-mode-both delay-200">
+                {steps[step].desc}
+             </p>
+          </div>
 
-        <div className="flex gap-4 items-center">
-          <button 
-            onClick={onComplete} 
-            className="flex-1 py-4 text-slate-500 font-bold hover:text-slate-300 transition-colors uppercase text-[10px] tracking-widest"
-          >
-            Skip Tour
-          </button>
-          <button 
-            onClick={handleNext} 
-            className="flex-[2] py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all active:scale-95"
-          >
-            {step === steps.length - 1 ? "Launch Workspace" : "Next Step"} 
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+          <div className="p-6 bg-slate-900/50 border-t border-slate-800 flex justify-between items-center">
+             <button onClick={onComplete} className="text-slate-500 text-xs font-bold hover:text-white px-4">SKIP TOUR</button>
+             
+             <button 
+                onClick={handleNext}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+             >
+                {step === steps.length - 1 ? 'Get Started' : 'Next Step'} <ArrowRight className="w-4 h-4" />
+             </button>
+          </div>
+
+       </div>
     </div>
   );
 }
