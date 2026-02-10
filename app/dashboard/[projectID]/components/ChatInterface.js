@@ -52,15 +52,13 @@ export default function ChatInterface({
         // 4. APPLY CODE CHANGES (UNIVERSAL HANDLER)
         if (data.files && Array.isArray(data.files)) {
             data.files.forEach(file => {
-                 // We pass the EXACT filename and content from AI to the Workspace
-                 // This handles both NEW files and UPDATES to existing ones
                  onExecute('UPDATE_FILE', { 
                     name: file.name, 
                     content: file.content 
                  });
             });
-            
-            // Force the Preview to switch to 'Live' mode so you see the changes immediately
+
+            // Force the Preview to switch to 'Live' mode
             setPreviewMode('live'); 
         }
 
@@ -74,16 +72,16 @@ export default function ChatInterface({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#020617] overflow-hidden">
-      
+    <div className="flex flex-col h-full w-full bg-black overflow-hidden relative">
+
       {/* MESSAGES AREA */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}>
-            <div className={`max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm 
+            <div className={`max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-lg
                 ${msg.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-br-none' 
-                    : 'bg-slate-900 border border-slate-800 text-slate-300 rounded-bl-none'
+                    ? 'bg-gradient-to-br from-pink-600 to-blue-600 text-white rounded-br-none shadow-pink-500/10 border border-white/10' 
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-bl-none'
                 }`}>
               {msg.text}
             </div>
@@ -93,19 +91,19 @@ export default function ChatInterface({
         {/* LOADING INDICATOR */}
         {isLoading && (
             <div className="flex justify-start animate-in fade-in">
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl rounded-bl-none p-4 flex items-center gap-3">
-                    <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                    <span className="text-xs text-slate-400 font-mono animate-pulse">Visionary AI is coding...</span>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl rounded-bl-none p-4 flex items-center gap-3 shadow-lg">
+                    <Loader2 className="w-4 h-4 text-pink-500 animate-spin" />
+                    <span className="text-xs text-zinc-500 font-mono animate-pulse">Visionary AI is coding...</span>
                 </div>
             </div>
         )}
       </div>
 
       {/* INPUT AREA */}
-      <div className="shrink-0 bg-[#020617] border-t border-slate-800/50 p-3 pb-safe">
+      <div className="shrink-0 bg-black border-t border-zinc-800 p-3 pb-safe z-10">
         <form onSubmit={handleSendMessage} className="relative flex items-center gap-2">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-            {isLoading ? <Sparkles className="w-4 h-4 animate-pulse text-blue-500" /> : <Mic className="w-4 h-4" />}
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+            {isLoading ? <Sparkles className="w-4 h-4 animate-pulse text-pink-500" /> : <Mic className="w-4 h-4 hover:text-white transition-colors cursor-pointer" />}
           </div>
           
           <input
@@ -114,13 +112,13 @@ export default function ChatInterface({
             onChange={(e) => setInputValue(e.target.value)}
             disabled={isLoading}
             placeholder={isLoading ? "Generating logic..." : "Describe a feature (e.g. 'Add a Login Screen')..."}
-            className="flex-1 bg-slate-900 border border-slate-800 text-white rounded-xl pl-10 pr-4 py-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all disabled:opacity-50"
+            className="flex-1 bg-zinc-900 border border-zinc-800 text-white rounded-xl pl-10 pr-4 py-3 text-sm focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all disabled:opacity-50 placeholder:text-zinc-600"
           />
           
           <button 
             type="submit" 
             disabled={!inputValue.trim() || isLoading} 
-            className="p-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+            className="p-3 bg-gradient-to-r from-pink-600 to-blue-600 hover:opacity-90 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-600 text-white rounded-xl transition-all shadow-lg shadow-pink-500/20 active:scale-95"
           >
             <Send className="w-5 h-5" />
           </button>
