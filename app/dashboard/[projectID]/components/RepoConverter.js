@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Github, Terminal, ArrowRight, CheckCircle2, FileJson } from "lucide-react";
+import { X, Github, Terminal, ArrowRight, CheckCircle2 } from "lucide-react";
 
 export default function RepoConverter({ isOpen, onClose, onUpdateFile, triggerHaptic }) {
   const [url, setUrl] = useState("");
@@ -55,15 +55,16 @@ export default function RepoConverter({ isOpen, onClose, onUpdateFile, triggerHa
                 </form>
              ) : (
                 <div className="space-y-6">
+                    {/* FIXED: Escaped '>' characters to '&gt;' to fix build error */}
                     <div className="h-40 bg-black rounded-xl border border-slate-800 p-4 font-mono text-[10px] text-slate-400 overflow-hidden relative">
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50" />
-                        <p>> git clone {url} .tmp</p>
-                        {status !== 'cloning' && <p className="text-green-500">> Clone successful.</p>}
-                        {status === 'parsing' && <p className="text-blue-400 animate-pulse">> Analyzing dependency graph...</p>}
+                        <p>&gt; git clone {url} .tmp</p>
+                        {status !== 'cloning' && <p className="text-green-500">&gt; Clone successful.</p>}
+                        {status === 'parsing' && <p className="text-blue-400 animate-pulse">&gt; Analyzing dependency graph...</p>}
                         {status === 'complete' && (
                             <>
-                                <p className="text-green-500">> Dependencies resolved.</p>
-                                <p className="text-green-500">> VFS Structure rebuilt.</p>
+                                <p className="text-green-500">&gt; Dependencies resolved.</p>
+                                <p className="text-green-500">&gt; VFS Structure rebuilt.</p>
                                 <p className="text-white font-bold mt-2">DONE.</p>
                             </>
                         )}
