@@ -28,7 +28,6 @@ export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
   // --- 4. INITIAL VFS STATE ---
-  // If project has saved files, load them. Otherwise, load defaults.
   const [projectFiles, setProjectFiles] = useState(project?.files || [
     { 
       name: "MainActivity.kt", 
@@ -50,7 +49,7 @@ export default function WorkspaceUI({ project }) {
   const [activeView, setActiveView] = useState('chat'); 
   const [previewMode, setPreviewMode] = useState('live'); 
   const [showTour, setShowTour] = useState(false); 
-  const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
+  const [saveStatus, setSaveStatus] = useState('idle'); 
 
   // --- 5. MODAL STATES ---
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
@@ -63,11 +62,10 @@ export default function WorkspaceUI({ project }) {
     { role: 'ai', text: `System Online. VFS linked for "${project?.name || 'New Project'}". Ready for commands.` },
   ]);
 
-  // --- 6. AUTO-SAVE SYSTEM (PRODUCTION GRADE) ---
+  // --- 6. AUTO-SAVE SYSTEM ---
   useEffect(() => {
     if (!project?._id || project.isDemo) return;
 
-    // Debounce: Wait 2 seconds after last change before saving
     const saveTimer = setTimeout(async () => {
       setSaveStatus('saving');
       try {
@@ -106,21 +104,29 @@ export default function WorkspaceUI({ project }) {
     if (!fileName) return;
     setProjectFiles(prev => {
       if (!prev) return [];
-      // Handle Updates
+      // Check if file exists to update it
       const exists = prev.find(f => f.name === fileName);
       if (exists) {
           return prev.map(file => file.name === fileName ? { ...file, content: newContent } : file);
       }
-      // Handle New Files (Implicit)
-      return [...prev, { name: fileName, content: newContent, path: "app/src/main/java/" }];
+      // If it doesn't exist, Create it (New File)
+      // We assume it goes into the java path by default unless it's XML
+      const defaultPath = fileName.endsWith('.xml') ? "app/src/main/res/layout/" : "app/src/main/java/";
+      return [...prev, { name: fileName, content: newContent, path: defaultPath }];
     });
     triggerHaptic();
   }, []);
 
-  // --- 9. AI AGENT HANDLERS ---
+  // --- 9. AI AGENT HANDLERS (UPDATED) ---
   const executeAICommand = async (commandType, payload) => {
     triggerHaptic();
     switch(commandType) {
+      // UNIVERSAL HANDLER: Used by ChatInterface to handle everything
+      case 'UPDATE_FILE':
+        updateFile(payload.name, payload.content);
+        break;
+        
+      // Legacy Handlers (kept for CloneVision/RepoConverter compatibility)
       case 'ADD_COMPONENT':
         if (payload.xml) updateFile("activity_main.xml", payload.xml);
         if (payload.kotlin) updateFile("MainActivity.kt", payload.kotlin);
@@ -163,7 +169,7 @@ export default function WorkspaceUI({ project }) {
       className="flex flex-col w-full bg-[#020617] text-slate-300 font-sans overflow-hidden fixed inset-0" 
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
-      {/* HEADER (Passes save status to visualize sync) */}
+      {/* HEADER */}
       <Header 
         project={project}
         saveStatus={saveStatus} 
