@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { User, X, Settings } from "lucide-react"; 
 
-// --- 1. CORE COMPONENTS (Verified Exist) ---
+// --- 1. CORE COMPONENTS ---
 import NavigationRail from "./components/NavigationRail";
 import Header from "./components/Header";
 import ChatInterface from "./components/ChatInterface";
@@ -12,14 +12,14 @@ import FileExplorer from "./components/FileExplorer";
 import PreviewPane from "./components/PreviewPane";
 import LogicMapView from "./components/LogicMapView"; 
 
-// --- 2. ADVANCED LAYERS (Verified Exist) ---
+// --- 2. VISIONARY TOOLS ---
 import RepoConverter from "./components/RepoConverter";
 import CloneVision from "./components/CloneVision";
+import QRShareModal from "./components/QRShareModal";
+import WelcomeTour from "./components/WelcomeTour";
+import Terminal from "./components/Terminal";
 
-// --- 3. FUTURE LAYERS (Commented out to prevent crash) ---
-// import QRShareModal from "./components/QRShareModal";
-// import WelcomeTour from "./components/WelcomeTour";
-// import Terminal from "./components/Terminal";
+// --- 3. FUTURE LAYERS (Keep commented until you build History/Settings) ---
 // import HistoryView from "./components/HistoryView";
 // import SettingsView from "./components/SettingsView";
 // import DebuggerView from "./components/DebuggerView"; 
@@ -27,7 +27,7 @@ import CloneVision from "./components/CloneVision";
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
-  // --- 4. INITIAL VFS STATE (Crash-Proof Default) ---
+  // --- 4. INITIAL VFS STATE ---
   const [projectFiles, setProjectFiles] = useState([
     { 
       name: "MainActivity.kt", 
@@ -48,6 +48,9 @@ export default function WorkspaceUI({ project }) {
 
   const [activeView, setActiveView] = useState('chat'); 
   const [previewMode, setPreviewMode] = useState('live'); 
+  
+  // Set this to true to see the tour on refresh!
+  const [showTour, setShowTour] = useState(false); 
 
   // --- 5. MODAL STATES ---
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
@@ -123,7 +126,7 @@ export default function WorkspaceUI({ project }) {
       className="flex flex-col w-full bg-[#020617] text-slate-300 font-sans overflow-hidden fixed inset-0" 
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
-      {/* HEADER: Wires up the Modal Triggers */}
+      {/* HEADER */}
       <Header 
         project={project}
         triggerHaptic={triggerHaptic}
@@ -165,6 +168,8 @@ export default function WorkspaceUI({ project }) {
 
           {activeView === 'files' && <FileExplorer files={projectFiles} />}
 
+          {activeView === 'terminal' && <Terminal project={project} triggerHaptic={triggerHaptic} />}
+
           {activeView === 'preview' && (
              <PreviewPane 
                 projectFiles={projectFiles} 
@@ -175,8 +180,8 @@ export default function WorkspaceUI({ project }) {
              />
           )}
 
-          {/* Fallback for disabled/future views */}
-          {['terminal', 'history', 'settings', 'debug'].includes(activeView) && (
+          {/* Fallback */}
+          {['history', 'settings', 'debug'].includes(activeView) && (
             <div className="flex-1 flex items-center justify-center text-slate-500 font-mono">
                 [Module: {activeView.toUpperCase()} Pending Compilation]
             </div>
@@ -188,16 +193,14 @@ export default function WorkspaceUI({ project }) {
       <div className="h-[1px] w-full bg-blue-500/20 shrink-0 z-[100] shadow-[0_0_10px_rgba(59,130,246,0.1)]" />
 
       {/* --- OVERLAYS --- */}
-      {/* 1. Repo Converter (Active) */}
       <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
-      
-      {/* 2. Clone Vision (Active) */}
       <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} />
+      <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} />
       
-      {/* 3. QR Share (Disabled - File Missing) */}
-      {/* <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} /> */}
-      
-      {/* PROFILE DRAWER (Inline Implementation) */}
+      {/* ONBOARDING TOUR */}
+      {showTour && <WelcomeTour onComplete={() => setShowTour(false)} triggerHaptic={triggerHaptic} />}
+
+      {/* PROFILE DRAWER */}
       {isProfileOpen && (
            <>
              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[100]" onClick={() => setIsProfileOpen(false)} />
@@ -217,7 +220,7 @@ export default function WorkspaceUI({ project }) {
            </>
       )}
 
-      {/* EXIT DIALOG (Inline Implementation) */}
+      {/* EXIT DIALOG */}
       {isExitModalOpen && (
         <div className="absolute inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center animate-in zoom-in-95">
