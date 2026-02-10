@@ -28,7 +28,8 @@ export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
   // --- 4. INITIAL VFS STATE ---
-  const [projectFiles, setProjectFiles] = useState([
+  // If project has saved files, load them. Otherwise, load defaults.
+  const [projectFiles, setProjectFiles] = useState(project?.files || [
     { 
       name: "MainActivity.kt", 
       path: "app/src/main/java/", 
@@ -48,9 +49,8 @@ export default function WorkspaceUI({ project }) {
 
   const [activeView, setActiveView] = useState('chat'); 
   const [previewMode, setPreviewMode] = useState('live'); 
-  
-  // Set to 'true' if you want the tour to show on every refresh (usually false)
   const [showTour, setShowTour] = useState(false); 
+  const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved | error
 
   // --- 5. MODAL STATES ---
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
@@ -63,24 +63,61 @@ export default function WorkspaceUI({ project }) {
     { role: 'ai', text: `System Online. VFS linked for "${project?.name || 'New Project'}". Ready for commands.` },
   ]);
 
-  // --- 6. HARDWARE BRIDGE ---
+  // --- 6. AUTO-SAVE SYSTEM (PRODUCTION GRADE) ---
+  useEffect(() => {
+    if (!project?._id || project.isDemo) return;
+
+    // Debounce: Wait 2 seconds after last change before saving
+    const saveTimer = setTimeout(async () => {
+      setSaveStatus('saving');
+      try {
+        const res = await fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            projectId: project._id,
+            files: projectFiles 
+          })
+        });
+        
+        if (res.ok) {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } else {
+            setSaveStatus('error');
+        }
+      } catch (err) {
+        console.error("Auto-Save Failed:", err);
+        setSaveStatus('error');
+      }
+    }, 2000);
+
+    return () => clearTimeout(saveTimer);
+  }, [projectFiles, project?._id]);
+
+
+  // --- 7. HARDWARE BRIDGE ---
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
-  // --- 7. REACTIVE FILE SYSTEM ---
+  // --- 8. REACTIVE FILE SYSTEM ---
   const updateFile = useCallback((fileName, newContent) => {
     if (!fileName) return;
     setProjectFiles(prev => {
       if (!prev) return [];
-      return prev.map(file => 
-        file.name === fileName ? { ...file, content: newContent } : file
-      );
+      // Handle Updates
+      const exists = prev.find(f => f.name === fileName);
+      if (exists) {
+          return prev.map(file => file.name === fileName ? { ...file, content: newContent } : file);
+      }
+      // Handle New Files (Implicit)
+      return [...prev, { name: fileName, content: newContent, path: "app/src/main/java/" }];
     });
     triggerHaptic();
   }, []);
 
-  // --- 8. AI AGENT HANDLERS ---
+  // --- 9. AI AGENT HANDLERS ---
   const executeAICommand = async (commandType, payload) => {
     triggerHaptic();
     switch(commandType) {
@@ -89,8 +126,8 @@ export default function WorkspaceUI({ project }) {
         if (payload.kotlin) updateFile("MainActivity.kt", payload.kotlin);
         break;
       case 'CREATE_PAGE':
-        const newFileName = `${payload.name}Activity.kt`;
-        setProjectFiles(prev => [...prev, { name: newFileName, path: "app/src/main/java/", content: payload.content }]);
+        const newFileName = payload.name.includes('.') ? payload.name : `${payload.name}Activity.kt`;
+        updateFile(newFileName, payload.content);
         break;
     }
   };
@@ -103,7 +140,7 @@ export default function WorkspaceUI({ project }) {
     }
   };
 
-  // --- 9. VIEWPORT FIX ---
+  // --- 10. VIEWPORT FIX ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleResize = () => {
@@ -116,7 +153,7 @@ export default function WorkspaceUI({ project }) {
     }
   }, []);
 
-  // --- 10. RENDER GUARDRAIL ---
+  // --- 11. RENDER GUARDRAIL ---
   if (!projectFiles) {
     return <div className="h-screen w-screen bg-[#020617] text-blue-500 flex items-center justify-center animate-pulse">Initializing Workspace...</div>;
   }
@@ -126,9 +163,10 @@ export default function WorkspaceUI({ project }) {
       className="flex flex-col w-full bg-[#020617] text-slate-300 font-sans overflow-hidden fixed inset-0" 
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
-      {/* HEADER */}
+      {/* HEADER (Passes save status to visualize sync) */}
       <Header 
         project={project}
+        saveStatus={saveStatus} 
         triggerHaptic={triggerHaptic}
         onImportClick={() => { setIsConverterOpen(true); triggerHaptic(); }}
         onCloneClick={() => { setIsCloneOpen(true); triggerHaptic(); }}
@@ -146,8 +184,7 @@ export default function WorkspaceUI({ project }) {
 
         <main className="flex-1 flex flex-col min-w-0 bg-[#020617] relative overflow-hidden border-l border-slate-800">
           
-          {/* --- VIEW ROUTER --- */}
-          
+          {/* VIEW ROUTER */}
           {activeView === 'chat' && (
              <ChatInterface 
                 messages={messages} 
