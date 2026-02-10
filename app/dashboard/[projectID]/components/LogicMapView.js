@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ZoomIn, ZoomOut, Move, Navigation } from "lucide-react";
+import { ZoomIn, ZoomOut, Move, Navigation, Share2 } from "lucide-react";
 
-// --- MINI SCREEN RENDERER (Unchanged) ---
+// --- MINI SCREEN RENDERER ---
 const MiniScreen = ({ content, name }) => {
   const renderXML = (xmlString) => {
-     if (!xmlString) return <div className="text-[8px] text-slate-600 p-2">Empty Layout</div>;
+     if (!xmlString) return <div className="text-[8px] text-zinc-700 p-2 font-mono">NO LAYOUT</div>;
      try {
          const parser = new DOMParser();
          const doc = parser.parseFromString(xmlString, "text/xml");
@@ -15,7 +15,7 @@ const MiniScreen = ({ content, name }) => {
          const parseNode = (node, index) => {
              if (node.nodeType !== 1) return null;
              const getAttr = (n) => node.getAttribute(`android:${n}`) || "";
-             
+
              const style = {
                  display: "flex",
                  flexDirection: getAttr("orientation") === "horizontal" ? "row" : "column",
@@ -25,13 +25,14 @@ const MiniScreen = ({ content, name }) => {
                  gap: "2px",
                  fontSize: "4px",
                  color: getAttr("textColor") || "#000",
-                 border: "1px solid rgba(0,0,0,0.05)",
+                 border: "1px solid rgba(255,255,255,0.05)", // Subtle border
                  alignItems: "center",
                  justifyContent: "center"
              };
 
+             // Neon-accented mock elements
              if (node.nodeName.includes("Button")) return <div key={index} style={{...style, backgroundColor: '#2563eb', color: 'white', borderRadius: 2, height: 8, width: '80%'}}></div>;
-             if (node.nodeName.includes("ImageView")) return <div key={index} style={{...style, backgroundColor: '#e2e8f0', height: 12, width: 12}}></div>;
+             if (node.nodeName.includes("ImageView")) return <div key={index} style={{...style, backgroundColor: '#27272a', height: 12, width: 12}}></div>;
              if (node.nodeName.includes("TextView")) return <div key={index} style={style}>{getAttr("text")?.slice(0, 10) || "..."}</div>;
 
              return <div key={index} style={style} className="w-full h-full">{Array.from(node.childNodes).map((child, i) => parseNode(child, i))}</div>;
@@ -41,11 +42,22 @@ const MiniScreen = ({ content, name }) => {
   };
 
   return (
-    <div className="w-[100px] h-[180px] bg-white rounded-lg shadow-sm overflow-hidden border border-slate-200 relative select-none pointer-events-none">
-        <div className="absolute top-0 w-full h-3 bg-slate-900 z-10" />
-        <div className="mt-3 h-full overflow-hidden">{renderXML(content)}</div>
-        <div className="absolute bottom-0 inset-x-0 bg-slate-900/80 p-1 text-center">
-            <p className="text-[8px] text-white font-mono truncate">{name.replace('.xml', '')}</p>
+    <div className="w-[100px] h-[180px] bg-black rounded-lg shadow-2xl overflow-hidden border border-zinc-800 relative select-none pointer-events-none group-hover:border-pink-500/50 transition-colors">
+        {/* Phone Frame Header */}
+        <div className="absolute top-0 w-full h-3 bg-zinc-900 border-b border-zinc-800 z-10 flex items-center justify-center">
+            <div className="w-8 h-1 bg-zinc-800 rounded-full" />
+        </div>
+        
+        {/* Content Area */}
+        <div className="mt-3 h-full overflow-hidden bg-black p-1">
+            <div className="w-full h-full bg-white rounded overflow-hidden">
+                {renderXML(content)}
+            </div>
+        </div>
+
+        {/* Footer Label */}
+        <div className="absolute bottom-0 inset-x-0 bg-zinc-900/90 border-t border-zinc-800 p-1 text-center backdrop-blur-sm">
+            <p className="text-[8px] text-zinc-300 font-mono truncate font-bold">{name.replace('.xml', '')}</p>
         </div>
     </div>
   );
@@ -54,7 +66,7 @@ const MiniScreen = ({ content, name }) => {
 export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHaptic }) {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 }); // Will be auto-centered on mount
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [activeNode, setActiveNode] = useState(null);
@@ -67,26 +79,22 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
   // 1. BUILD GRAPH DATA
   const { nodes, edges } = useMemo(() => {
     const xmlFiles = projectFiles.filter(f => f.name.endsWith('.xml'));
-    
-    // Simple Grid Layout Logic
-    // We center the grid around (0,0) conceptually first
+
     const _nodes = xmlFiles.map((f, i) => {
        const shortName = f.name.replace('activity_', '').replace('.xml', '');
        const cols = 3;
        const col = i % cols;
        const row = Math.floor(i / cols);
-       
+
        return {
            id: shortName,
            file: f,
-           // Layout spacing: 250px wide, 300px tall gaps
            x: col * 250, 
            y: row * 300,
            type: 'screen'
        };
     });
 
-    // Detect Connections (Intent logic)
     const connections = [];
     projectFiles.filter(f => f.name.endsWith('.kt')).forEach(kt => {
         const matches = [...kt.content.matchAll(/Intent\s*\(\s*this\s*,\s*(\w+)::class\.java\s*\)/g)];
@@ -109,14 +117,12 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
   useEffect(() => {
      if (nodes.length === 0 || !containerRef.current) return;
 
-     // Initialize node positions
      const initialPos = {};
      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
      nodes.forEach(n => {
          if (!nodePositions[n.id]) {
              initialPos[n.id] = { x: n.x, y: n.y };
-             // Update bounding box
              if (n.x < minX) minX = n.x;
              if (n.x > maxX) maxX = n.x;
              if (n.y < minY) minY = n.y;
@@ -126,24 +132,19 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
 
      setNodePositions(prev => ({ ...prev, ...initialPos }));
 
-     // Calculate Center
-     // If we just loaded, center the bounding box in the viewport
      if (Object.keys(nodePositions).length === 0) {
-        const contentWidth = maxX - minX + 100; // +100 for card width
-        const contentHeight = maxY - minY + 180; // +180 for card height
-        
+        const contentWidth = maxX - minX + 100;
+        const contentHeight = maxY - minY + 180;
         const containerW = containerRef.current.clientWidth;
         const containerH = containerRef.current.clientHeight;
-
         const centerX = (containerW - contentWidth) / 2 - minX;
         const centerY = (containerH - contentHeight) / 2 - minY;
-
         setPan({ x: centerX, y: centerY });
      }
 
   }, [nodes]);
 
-  // --- MOUSE DRAG HANDLERS (Desktop) ---
+  // --- MOUSE HANDLERS ---
   const handleMouseDown = (e, nodeId) => {
      e.stopPropagation();
      setActiveNode(nodeId);
@@ -172,13 +173,12 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
   const handleMouseUp = () => {
       setIsDragging(false);
       setActiveNode(null);
-      setInitialPinchDist(null); // Reset pinch
+      setInitialPinchDist(null);
   };
 
-  // --- TOUCH HANDLERS (Mobile Pinch & Pan) ---
+  // --- TOUCH HANDLERS ---
   const handleTouchStart = (e) => {
       if (e.touches.length === 2) {
-          // PINCH STARTED
           const dist = Math.hypot(
               e.touches[0].clientX - e.touches[1].clientX,
               e.touches[0].clientY - e.touches[1].clientY
@@ -186,7 +186,6 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
           setInitialPinchDist(dist);
           setInitialScale(scale);
       } else if (e.touches.length === 1) {
-          // PAN STARTED
           setIsDragging(true);
           const touch = e.touches[0];
           setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
@@ -194,19 +193,15 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
   };
 
   const handleTouchMove = (e) => {
-      e.preventDefault(); // Prevent scrolling the whole page
-      
+      e.preventDefault();
       if (e.touches.length === 2 && initialPinchDist) {
-          // PINCH ZOOMING
           const dist = Math.hypot(
               e.touches[0].clientX - e.touches[1].clientX,
               e.touches[0].clientY - e.touches[1].clientY
           );
           const zoomFactor = dist / initialPinchDist;
-          const newScale = Math.min(Math.max(initialScale * zoomFactor, 0.4), 3);
-          setScale(newScale);
+          setScale(Math.min(Math.max(initialScale * zoomFactor, 0.4), 3));
       } else if (e.touches.length === 1 && isDragging) {
-          // PANNING
           const touch = e.touches[0];
           setPan({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
       }
@@ -232,9 +227,11 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
 
           return (
               <g key={edge.id}>
-                 <path d={path} stroke="#3b82f6" strokeWidth="2" fill="none" className="drop-shadow-md" />
-                 <circle cx={x2} cy={y2} r="4" fill="#3b82f6" />
-                 <circle cx={x1} cy={y1} r="2" fill="#64748b" />
+                 {/* Neon Glow Effect on Line */}
+                 <path d={path} stroke="#ec4899" strokeWidth="4" fill="none" className="opacity-20 blur-sm" />
+                 <path d={path} stroke="#3b82f6" strokeWidth="2" fill="none" />
+                 <circle cx={x2} cy={y2} r="4" fill="#3b82f6" className="drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                 <circle cx={x1} cy={y1} r="3" fill="#ec4899" />
               </g>
           );
       });
@@ -243,7 +240,7 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
   return (
     <div 
         ref={containerRef}
-        className="h-full w-full bg-[#0a0a0a] relative overflow-hidden cursor-grab active:cursor-grabbing touch-none"
+        className="h-full w-full bg-black relative overflow-hidden cursor-grab active:cursor-grabbing touch-none selection:bg-pink-500/30"
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -252,18 +249,18 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{ 
-            backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', 
+            backgroundImage: 'radial-gradient(#27272a 1px, transparent 1px)', 
             backgroundSize: `${20 * scale}px ${20 * scale}px`,
             backgroundPosition: `${pan.x}px ${pan.y}px`
         }}
     >
       {/* TOOLBAR: Hidden on Mobile (sm:flex) */}
-      <div className="hidden sm:flex absolute top-4 right-4 z-50 gap-2 bg-slate-900/90 border border-slate-800 p-2 rounded-xl backdrop-blur text-slate-400 shadow-xl">
+      <div className="hidden sm:flex absolute top-4 right-4 z-50 gap-2 bg-zinc-900/90 border border-zinc-800 p-2 rounded-xl backdrop-blur text-zinc-400 shadow-xl">
          <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} className="p-2 hover:text-white hover:bg-white/10 rounded-lg"><ZoomOut className="w-4 h-4" /></button>
-         <span className="p-2 text-xs font-mono font-bold text-blue-400">{Math.round(scale * 100)}%</span>
+         <span className="p-2 text-xs font-mono font-bold text-pink-500">{Math.round(scale * 100)}%</span>
          <button onClick={() => setScale(s => Math.min(2, s + 0.1))} className="p-2 hover:text-white hover:bg-white/10 rounded-lg"><ZoomIn className="w-4 h-4" /></button>
-         <div className="w-px bg-slate-700 mx-1" />
-         <button onClick={() => { /* Recenter Logic could go here */ }} className="p-2 hover:text-white hover:bg-white/10 rounded-lg"><Move className="w-4 h-4" /></button>
+         <div className="w-px bg-zinc-700 mx-1" />
+         <button className="p-2 hover:text-white hover:bg-white/10 rounded-lg"><Move className="w-4 h-4" /></button>
       </div>
 
       {/* CANVAS */}
@@ -282,13 +279,15 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
               return (
                   <div 
                     key={node.id}
-                    className={`absolute z-10 group transition-shadow duration-200 ${activeNode === node.id ? 'z-50 scale-105 shadow-2xl shadow-blue-500/30' : ''}`}
+                    className={`absolute z-10 group transition-shadow duration-200 ${activeNode === node.id ? 'z-50 scale-105 shadow-[0_0_30px_rgba(59,130,246,0.3)]' : 'shadow-lg'}`}
                     style={{ left: pos.x, top: pos.y }}
                     onMouseDown={(e) => handleMouseDown(e, node.id)}
                   >
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-900 rounded-full border border-slate-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                      {/* Connection Handle */}
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-black rounded-full border border-zinc-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 shadow-lg">
+                          <div className="w-2 h-2 bg-pink-500 rounded-full shadow-[0_0_5px_#ec4899]" />
                       </div>
+                      
                       <MiniScreen content={node.file.content} name={node.file.name} />
                   </div>
               );
@@ -296,10 +295,10 @@ export default function LogicMapView({ projectFiles, onLogicUpdate, triggerHapti
       </div>
 
       {/* FOOTER HINT */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/80 px-4 py-2 rounded-full border border-slate-800 backdrop-blur pointer-events-none animate-in slide-in-from-bottom-4">
-          <p className="text-[10px] text-slate-400 flex items-center gap-2">
-              <Navigation className="w-3 h-3 text-blue-400" />
-              {nodes.length} Screens Detected
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-zinc-900/80 px-4 py-2 rounded-full border border-zinc-800 backdrop-blur pointer-events-none animate-in slide-in-from-bottom-4 shadow-xl">
+          <p className="text-[10px] text-zinc-400 flex items-center gap-2 font-medium">
+              <Share2 className="w-3 h-3 text-pink-500" />
+              <span className="text-white">{nodes.length}</span> Screens Detected
           </p>
       </div>
     </div>
