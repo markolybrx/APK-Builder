@@ -5,7 +5,7 @@ import WorkspaceUI from "./WorkspaceUI";
 export default async function ProjectEditor({ params }) {
   // FIX 1: Await params (Required for Next.js 15+)
   const resolvedParams = await params; 
-  const id = resolvedParams?.projectid; // Ensure folder is named [id], not [projectId]
+  const id = resolvedParams?.projectID; // Ensure folder is named [id], not [projectId]
 
   let project = null;
 
