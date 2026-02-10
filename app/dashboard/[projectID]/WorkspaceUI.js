@@ -19,10 +19,10 @@ import QRShareModal from "./components/QRShareModal";
 import WelcomeTour from "./components/WelcomeTour";
 import Terminal from "./components/Terminal";
 
-// --- 3. FUTURE LAYERS (Keep commented until you build History/Settings) ---
-// import HistoryView from "./components/HistoryView";
-// import SettingsView from "./components/SettingsView";
-// import DebuggerView from "./components/DebuggerView"; 
+// --- 3. SYSTEM INTERNALS ---
+import HistoryView from "./components/HistoryView";
+import SettingsView from "./components/SettingsView";
+import DebuggerView from "./components/DebuggerView"; 
 
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
@@ -49,7 +49,7 @@ export default function WorkspaceUI({ project }) {
   const [activeView, setActiveView] = useState('chat'); 
   const [previewMode, setPreviewMode] = useState('live'); 
   
-  // Set this to true to see the tour on refresh!
+  // Set to 'true' if you want the tour to show on every refresh (usually false)
   const [showTour, setShowTour] = useState(false); 
 
   // --- 5. MODAL STATES ---
@@ -60,7 +60,7 @@ export default function WorkspaceUI({ project }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [messages, setMessages] = useState([
-    { role: 'ai', text: `System Online. VFS linked for "${project?.name || 'New Project'}".` },
+    { role: 'ai', text: `System Online. VFS linked for "${project?.name || 'New Project'}". Ready for commands.` },
   ]);
 
   // --- 6. HARDWARE BRIDGE ---
@@ -146,7 +146,8 @@ export default function WorkspaceUI({ project }) {
 
         <main className="flex-1 flex flex-col min-w-0 bg-[#020617] relative overflow-hidden border-l border-slate-800">
           
-          {/* VIEW ROUTER */}
+          {/* --- VIEW ROUTER --- */}
+          
           {activeView === 'chat' && (
              <ChatInterface 
                 messages={messages} 
@@ -180,12 +181,12 @@ export default function WorkspaceUI({ project }) {
              />
           )}
 
-          {/* Fallback */}
-          {['history', 'settings', 'debug'].includes(activeView) && (
-            <div className="flex-1 flex items-center justify-center text-slate-500 font-mono">
-                [Module: {activeView.toUpperCase()} Pending Compilation]
-            </div>
-          )}
+          {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
+          
+          {activeView === 'settings' && <SettingsView project={project} triggerHaptic={triggerHaptic} />}
+          
+          {activeView === 'debug' && <DebuggerView files={projectFiles} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />}
+
         </main>
       </div>
 
