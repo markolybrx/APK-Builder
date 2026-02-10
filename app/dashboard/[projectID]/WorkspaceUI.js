@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { User, X, Settings } from "lucide-react"; 
 
-// --- 1. CORE COMPONENTS (Must exist in /components folder) ---
+// --- 1. CORE COMPONENTS (Verified Exist) ---
 import NavigationRail from "./components/NavigationRail";
 import Header from "./components/Header";
 import ChatInterface from "./components/ChatInterface";
@@ -12,21 +12,22 @@ import FileExplorer from "./components/FileExplorer";
 import PreviewPane from "./components/PreviewPane";
 import LogicMapView from "./components/LogicMapView"; 
 
-// --- 2. ADVANCED LAYERS (Uncomment ONLY when files exist to prevent crashes) ---
+// --- 2. ADVANCED LAYERS (Verified Exist) ---
+import RepoConverter from "./components/RepoConverter";
+import CloneVision from "./components/CloneVision";
+
+// --- 3. FUTURE LAYERS (Commented out to prevent crash) ---
+// import QRShareModal from "./components/QRShareModal";
+// import WelcomeTour from "./components/WelcomeTour";
 // import Terminal from "./components/Terminal";
 // import HistoryView from "./components/HistoryView";
 // import SettingsView from "./components/SettingsView";
-// import RepoConverter from "./components/RepoConverter";
-// import CloneVision from "./components/CloneVision";
-// import QRShareModal from "./components/QRShareModal";
-// import WelcomeTour from "./components/WelcomeTour";
 // import DebuggerView from "./components/DebuggerView"; 
 
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
-  // --- 3. INITIAL VFS STATE ---
-  // We initialize with a safe default to prevent "undefined" errors on load
+  // --- 4. INITIAL VFS STATE (Crash-Proof Default) ---
   const [projectFiles, setProjectFiles] = useState([
     { 
       name: "MainActivity.kt", 
@@ -36,7 +37,7 @@ export default function WorkspaceUI({ project }) {
     { 
       name: "activity_main.xml", 
       path: "app/src/main/res/layout/", 
-      content: "<?xml version='1.0' encoding='utf-8'?>\n<LinearLayout xmlns:android='http://schemas.android.com/apk/res/android' android:layout_width='match_parent' android:layout_height='match_parent' android:orientation='vertical' android:gravity='center'>\n    <TextView android:text='System Online' android:textSize='24sp' android:layout_width='wrap_content' android:layout_height='wrap_content' />\n    <Button android:id='@+id/btn_action' android:text='Click Me' android:layout_width='wrap_content' android:layout_height='wrap_content' android:layout_marginTop='16dp' />\n</LinearLayout>" 
+      content: "<?xml version='1.0' encoding='utf-8'?>\n<LinearLayout xmlns:android='http://schemas.android.com/apk/res/android' android:layout_width='match_parent' android:layout_height='match_parent' android:orientation='vertical' android:gravity='center'>\n    <TextView android:text='Visionary OS Online' android:textSize='24sp' android:layout_width='wrap_content' android:layout_height='wrap_content' />\n    <Button android:id='@+id/btn_start' android:text='Initialize' android:layout_width='wrap_content' android:layout_height='wrap_content' android:layout_marginTop='20dp' />\n</LinearLayout>" 
     },
     { 
       name: "AndroidManifest.xml", 
@@ -48,7 +49,7 @@ export default function WorkspaceUI({ project }) {
   const [activeView, setActiveView] = useState('chat'); 
   const [previewMode, setPreviewMode] = useState('live'); 
 
-  // Modal States
+  // --- 5. MODAL STATES ---
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isConverterOpen, setIsConverterOpen] = useState(false); 
   const [isCloneOpen, setIsCloneOpen] = useState(false);
@@ -59,12 +60,12 @@ export default function WorkspaceUI({ project }) {
     { role: 'ai', text: `System Online. VFS linked for "${project?.name || 'New Project'}".` },
   ]);
 
-  // --- 4. HARDWARE BRIDGE ---
+  // --- 6. HARDWARE BRIDGE ---
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
-  // --- 5. REACTIVE FILE SYSTEM ---
+  // --- 7. REACTIVE FILE SYSTEM ---
   const updateFile = useCallback((fileName, newContent) => {
     if (!fileName) return;
     setProjectFiles(prev => {
@@ -76,7 +77,7 @@ export default function WorkspaceUI({ project }) {
     triggerHaptic();
   }, []);
 
-  // --- 6. AI AGENT HANDLERS ---
+  // --- 8. AI AGENT HANDLERS ---
   const executeAICommand = async (commandType, payload) => {
     triggerHaptic();
     switch(commandType) {
@@ -99,7 +100,7 @@ export default function WorkspaceUI({ project }) {
     }
   };
 
-  // --- 7. VIEWPORT FIX ---
+  // --- 9. VIEWPORT FIX ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleResize = () => {
@@ -112,7 +113,7 @@ export default function WorkspaceUI({ project }) {
     }
   }, []);
 
-  // --- 8. RENDER GUARDRAIL ---
+  // --- 10. RENDER GUARDRAIL ---
   if (!projectFiles) {
     return <div className="h-screen w-screen bg-[#020617] text-blue-500 flex items-center justify-center animate-pulse">Initializing Workspace...</div>;
   }
@@ -122,7 +123,7 @@ export default function WorkspaceUI({ project }) {
       className="flex flex-col w-full bg-[#020617] text-slate-300 font-sans overflow-hidden fixed inset-0" 
       style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
     >
-      {/* HEADER */}
+      {/* HEADER: Wires up the Modal Triggers */}
       <Header 
         project={project}
         triggerHaptic={triggerHaptic}
@@ -174,10 +175,10 @@ export default function WorkspaceUI({ project }) {
              />
           )}
 
-          {/* Fallback for disabled views */}
+          {/* Fallback for disabled/future views */}
           {['terminal', 'history', 'settings', 'debug'].includes(activeView) && (
             <div className="flex-1 flex items-center justify-center text-slate-500 font-mono">
-                [View Module: {activeView.toUpperCase()} Not Loaded]
+                [Module: {activeView.toUpperCase()} Pending Compilation]
             </div>
           )}
         </main>
@@ -186,12 +187,17 @@ export default function WorkspaceUI({ project }) {
       {/* HORIZON LINE */}
       <div className="h-[1px] w-full bg-blue-500/20 shrink-0 z-[100] shadow-[0_0_10px_rgba(59,130,246,0.1)]" />
 
-      {/* --- OVERLAYS (Uncomment when files are ready) --- */}
-      {/* <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} /> */}
-      {/* <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} /> */}
+      {/* --- OVERLAYS --- */}
+      {/* 1. Repo Converter (Active) */}
+      <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
+      
+      {/* 2. Clone Vision (Active) */}
+      <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} />
+      
+      {/* 3. QR Share (Disabled - File Missing) */}
       {/* <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} /> */}
       
-      {/* PROFILE DRAWER */}
+      {/* PROFILE DRAWER (Inline Implementation) */}
       {isProfileOpen && (
            <>
              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[100]" onClick={() => setIsProfileOpen(false)} />
@@ -211,7 +217,7 @@ export default function WorkspaceUI({ project }) {
            </>
       )}
 
-      {/* EXIT DIALOG */}
+      {/* EXIT DIALOG (Inline Implementation) */}
       {isExitModalOpen && (
         <div className="absolute inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0f172a] border border-slate-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full text-center animate-in zoom-in-95">
