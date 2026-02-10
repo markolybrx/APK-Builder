@@ -1,95 +1,82 @@
 "use client";
 
-import { useState } from "react";
-import { Bug, Play, ShieldAlert, CheckCircle, RefreshCw, Code2 } from "lucide-react";
+import { useMemo } from "react";
+import { Bug, CheckCircle2, AlertTriangle, XCircle, FileCode } from "lucide-react";
 
-export default function DebuggerView({ files, onUpdateFile, triggerHaptic }) {
-  const [isScanning, setIsScanning] = useState(false);
-  const [logs, setLogs] = useState([
-    { id: 1, type: 'error', file: 'activity_main.xml', msg: 'Missing closing tag for <Button>', status: 'open' },
-    { id: 2, type: 'warning', file: 'MainActivity.kt', msg: 'Unused import: android.widget.Toast', status: 'open' }
-  ]);
+export default function DebuggerView({ files = [], onUpdateFile, triggerHaptic }) {
+  
+  // Real-time Static Analysis of the VFS
+  const issues = useMemo(() => {
+    const foundIssues = [];
+    const xmlFile = files.find(f => f.name.endsWith('.xml'))?.content || "";
+    const ktFile = files.find(f => f.name.endsWith('.kt'))?.content || "";
 
-  const runScan = () => {
-    setIsScanning(true);
-    triggerHaptic();
-    // Simulate AI scanning the projectFiles state
-    setTimeout(() => {
-      setIsScanning(false);
-    }, 2000);
-  };
+    // 1. Check for missing IDs in Kotlin
+    const xmlIds = [...xmlFile.matchAll(/android:id="\@\+id\/([^"]+)"/g)].map(m => m[1]);
+    
+    xmlIds.forEach(id => {
+        if (!ktFile.includes(id) && !ktFile.includes(`R.id.${id}`)) {
+            foundIssues.push({
+                severity: 'warning',
+                file: 'MainActivity.kt',
+                msg: `Unused View ID: '${id}' is defined in XML but not referenced in Kotlin.`,
+                line: 12
+            });
+        }
+    });
 
-  const handleFix = (log) => {
-    triggerHaptic();
-    // Logic: Actually fix the file in the global state
-    if (log.file === 'activity_main.xml') {
-      onUpdateFile('activity_main.xml', '\n<LinearLayout>\n  <Button />\n</LinearLayout>');
+    // 2. Check for Hardcoded Strings
+    if (xmlFile.includes('android:text="')) {
+        foundIssues.push({
+            severity: 'error',
+            file: 'activity_main.xml',
+            msg: 'Hardcoded string detected. Use @string/ resource instead.',
+            line: 5
+        });
     }
-    setLogs(prev => prev.map(l => l.id === log.id ? { ...l, status: 'fixed' } : l));
-  };
+
+    return foundIssues;
+  }, [files]);
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#0f172a] text-slate-300 overflow-hidden">
-      
-      {/* 1. PINNED HEADER (Shrink-0) */}
-      <div className="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900 shrink-0 z-10">
-        <div className="flex items-center gap-2">
-          <Bug className="w-4 h-4 text-red-400" />
-          <span className="font-bold text-white uppercase tracking-widest text-[10px]">AI Debugger</span>
-        </div>
-        <button 
-          onClick={runScan}
-          className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-        >
-          {isScanning ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
-          {isScanning ? "Scanning..." : "Run Project Audit"}
-        </button>
+    <div className="flex flex-col h-full bg-[#0a0a0a] text-slate-300">
+      <div className="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-[#0f172a]">
+         <div className="flex items-center gap-2 font-bold text-white">
+            <Bug className="w-5 h-5 text-red-500" />
+            <span>Lint & Debug</span>
+         </div>
+         <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500">{issues.length} ISSUES FOUND</span>
+         </div>
       </div>
 
-      {/* 2. SCROLLABLE LOG ZONE */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-950/20">
-        {logs.map((log) => (
-          <div 
-            key={log.id} 
-            className={`p-4 rounded-2xl border animate-in fade-in slide-in-from-bottom-2 duration-300
-              ${log.status === 'fixed' ? 'bg-green-500/5 border-green-500/20' : 'bg-slate-900 border-slate-800'} 
-              transition-all`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex gap-4">
-                <div className={`p-2 rounded-xl bg-slate-950 ${log.status === 'fixed' ? 'text-green-500' : 'text-red-400'}`}>
-                  {log.status === 'fixed' ? <CheckCircle className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter font-mono">{log.file}</span>
-                    <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border 
-                      ${log.status === 'fixed' ? 'border-green-500/30 text-green-500' : 'border-red-500/30 text-red-500'}`}>
-                      {log.type}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium text-slate-200 leading-snug">{log.msg}</p>
-                </div>
-              </div>
-
-              {log.status === 'open' && (
-                <button 
-                  onClick={() => handleFix(log)}
-                  className="px-3 py-2 bg-slate-800 hover:bg-blue-600 text-white text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap"
-                >
-                  One-Tap Fix
-                </button>
-              )}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+         {issues.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 opacity-50">
+                <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
+                <h3 className="text-lg font-bold text-white">All Systems Operational</h3>
+                <p className="text-sm text-slate-500">No static analysis errors detected.</p>
             </div>
-          </div>
-        ))}
-        {/* Spacer to ensure last item is visible above padding */}
-        <div className="h-4" />
-      </div>
-
-      {/* 3. PINNED STATUS FOOTER (Shrink-0) */}
-      <div className="p-4 bg-slate-950 border-t border-slate-800 text-[10px] text-slate-500 italic text-center uppercase tracking-tighter shrink-0">
-        * The Debugger continuously monitors your projectFiles state for runtime conflicts.
+         ) : (
+             issues.map((issue, i) => (
+                <div key={i} className={`p-4 rounded-xl border flex gap-4 ${issue.severity === 'error' ? 'bg-red-500/5 border-red-500/20' : 'bg-yellow-500/5 border-yellow-500/20'}`}>
+                    <div className="mt-1">
+                        {issue.severity === 'error' ? <XCircle className="w-5 h-5 text-red-500" /> : <AlertTriangle className="w-5 h-5 text-yellow-500" />}
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${issue.severity === 'error' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-black'}`}>
+                                {issue.severity}
+                            </span>
+                            <span className="text-xs font-mono text-slate-500 flex items-center gap-1">
+                                <FileCode className="w-3 h-3" /> {issue.file}
+                            </span>
+                        </div>
+                        <p className="text-sm text-slate-200 font-medium">{issue.msg}</p>
+                    </div>
+                </div>
+             ))
+         )}
       </div>
     </div>
   );
