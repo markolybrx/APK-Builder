@@ -15,7 +15,7 @@ export default function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef(null);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom for seamless UX
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isLoading]);
@@ -32,7 +32,7 @@ export default function ChatInterface({
     setIsLoading(true);
 
     try {
-        // 2. CONNECT TO GEMINI BACKEND
+        // 2. CONNECT TO VISIONARY GENERATION API
         const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -49,7 +49,7 @@ export default function ChatInterface({
         // 3. PROCESS AI RESPONSE
         setMessages(prev => [...prev, { role: 'ai', text: data.message }]);
 
-        // 4. APPLY CODE CHANGES (UNIVERSAL HANDLER)
+        // 4. APPLY CODE CHANGES (Clustered Handler)
         if (data.files && Array.isArray(data.files)) {
             data.files.forEach(file => {
                  onExecute('UPDATE_FILE', { 
@@ -58,8 +58,8 @@ export default function ChatInterface({
                  });
             });
 
-            // Force the Preview to switch to 'Live' mode
-            setPreviewMode('live'); 
+            // Force the Preview to switch to 'Live' mode to reflect changes
+            setPreviewMode?.('live'); 
         }
 
     } catch (error) {
@@ -105,7 +105,7 @@ export default function ChatInterface({
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
             {isLoading ? <Sparkles className="w-4 h-4 animate-pulse text-pink-500" /> : <Mic className="w-4 h-4 hover:text-white transition-colors cursor-pointer" />}
           </div>
-          
+
           <input
             type="text"
             value={inputValue}
@@ -114,7 +114,7 @@ export default function ChatInterface({
             placeholder={isLoading ? "Generating logic..." : "Describe a feature (e.g. 'Add a Login Screen')..."}
             className="flex-1 bg-zinc-900 border border-zinc-800 text-white rounded-xl pl-10 pr-4 py-3 text-sm focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 outline-none transition-all disabled:opacity-50 placeholder:text-zinc-600"
           />
-          
+
           <button 
             type="submit" 
             disabled={!inputValue.trim() || isLoading} 
