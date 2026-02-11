@@ -7,7 +7,7 @@ export default function Terminal({ project, triggerHaptic }) {
   const [logs, setLogs] = useState([]);
   const bottomRef = useRef(null);
 
-  // Initial Boot Sequence Simulation
+  // --- 1. INITIAL BOOT SEQUENCE SIMULATION ---
   useEffect(() => {
     const bootSequence = [
       { type: 'dim', text: `> Initializing environment for ${project?.name || 'Visionary Project'}...` },
@@ -27,6 +27,7 @@ export default function Terminal({ project, triggerHaptic }) {
     });
   }, [project?.name]);
 
+  // --- 2. AUTO-SCROLL TELEMETRY ---
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
@@ -34,34 +35,34 @@ export default function Terminal({ project, triggerHaptic }) {
   return (
     <div className="flex flex-col h-full bg-black font-mono text-[10px] md:text-xs overflow-hidden border-t border-zinc-800">
 
-      {/* Terminal Header */}
-      <div className="h-10 bg-black border-b border-zinc-800 flex items-center justify-between px-4 select-none shrink-0">
+      {/* TERMINAL HEADER */}
+      <div className="h-10 bg-black border-b border-zinc-800 flex items-center justify-between px-4 select-none shrink-0 z-20">
         <div className="flex items-center gap-2 text-zinc-400">
             <TerminalIcon className="w-3.5 h-3.5 text-blue-500" />
-            <span className="font-bold tracking-wider text-zinc-300">CONSOLE_OUTPUT</span>
+            <span className="font-bold tracking-wider text-zinc-300 uppercase">Console_Output</span>
         </div>
         <div className="flex items-center gap-3">
              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-900/20 border border-green-900/50 rounded text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.1)]">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_5px_#22c55e]" />
-                <span className="text-[9px] font-bold tracking-tight">ONLINE</span>
+                <span className="text-[9px] font-bold tracking-tight uppercase">Online</span>
              </div>
         </div>
       </div>
 
-      {/* Log Output */}
+      {/* LOG OUTPUT ZONE */}
       <div className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar bg-black relative">
-        {/* Subtle Grid Background */}
+        {/* Visual Matrix Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
-        
-        {logs.length === 0 && <div className="text-zinc-700 italic">Initializing stream...</div>}
+
+        {logs.length === 0 && <div className="text-zinc-700 italic font-mono">Initializing data stream...</div>}
 
         {logs.map((log, i) => (
             <div key={i} className="flex gap-3 relative z-10 animate-in slide-in-from-left-2 duration-200">
-                <span className="text-zinc-600 shrink-0 select-none w-16 text-right">
+                <span className="text-zinc-600 shrink-0 select-none w-16 text-right font-mono opacity-50">
                     {new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}
                 </span>
                 <span className={`
-                    break-all
+                    break-all font-mono
                     ${log.type === 'error' ? 'text-red-500 font-bold' : ''}
                     ${log.type === 'success' ? 'text-green-400' : ''}
                     ${log.type === 'warn' ? 'text-yellow-400' : ''}
@@ -76,10 +77,10 @@ export default function Terminal({ project, triggerHaptic }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input Line (Visual Only) */}
-      <div className="p-2 bg-zinc-900/30 border-t border-zinc-800 flex items-center gap-2 text-zinc-500 shrink-0">
-        <span className="text-pink-500 font-bold">➜</span>
-        <span className="text-blue-500 font-bold">~/project/src</span>
+      {/* COMMAND LINE STUB */}
+      <div className="p-2 bg-zinc-900/30 border-t border-zinc-800 flex items-center gap-2 text-zinc-500 shrink-0 select-none">
+        <span className="text-pink-500 font-bold font-mono">➜</span>
+        <span className="text-blue-500 font-bold font-mono text-[9px] md:text-[10px]">~/visionary/core</span>
         <span className="w-1.5 h-4 bg-zinc-500 animate-pulse" />
       </div>
     </div>
