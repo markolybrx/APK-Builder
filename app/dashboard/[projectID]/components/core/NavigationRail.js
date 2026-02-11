@@ -11,10 +11,10 @@ export default function NavigationRail({
   setActiveView, 
   onExit, 
   triggerHaptic,
-  onOpenOrb // NEW: Centralized launcher trigger
+  onOpenOrb // The gateway to the Visionary Cluster
 }) {
 
-  // --- 1. CORE UTILITIES (THE "BIG 5") ---
+  // --- 1. CORE CLUSTER VIEWS ---
   const navItems = [
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
     { id: 'files', icon: Folder, label: 'Files' },
@@ -23,7 +23,7 @@ export default function NavigationRail({
     { id: 'debug', icon: Bug, label: 'Debug' }, 
   ];
 
-  // --- 2. SYSTEM UTILITIES ---
+  // --- 2. SYSTEM UTILITIES (SHARED CLUSTER) ---
   const bottomItems = [
     { id: 'history', icon: Clock, label: 'History' },
     { id: 'settings', icon: Settings, label: 'Config' },
@@ -71,23 +71,23 @@ export default function NavigationRail({
   return (
     <nav className="w-16 bg-black border-r border-zinc-800 flex flex-col items-center py-4 shrink-0 z-40 select-none">
 
-      {/* 1. PRIMARY TOOLS */}
+      {/* 1. PRIMARY TOOLS (CORE & LOGIC) */}
       <div className="flex-1 flex flex-col w-full px-2 gap-1 overflow-y-auto no-scrollbar">
         {navItems.map((item) => (
           <NavItem key={item.id} item={item} />
         ))}
-        
-        {/* Terminal shortcut stays in core for quick build checks */}
+
+        {/* Terminal shortcut for rapid deployment checks */}
         <button 
           onClick={() => handleNavClick('terminal')}
           className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl transition-all ${activeView === 'terminal' ? 'bg-zinc-900' : 'hover:bg-zinc-900/50'}`}
         >
           <Terminal className={`w-5 h-5 ${activeView === 'terminal' ? 'text-white' : 'text-zinc-600'}`} />
-          <span className="text-[7px] font-bold mt-1 text-zinc-700">TERM</span>
+          <span className="text-[7px] font-bold mt-1 text-zinc-700 uppercase">Term</span>
         </button>
       </div>
 
-      {/* 2. THE ACTION ORB (Launcher for 30+ Visionary Tools) */}
+      {/* 2. THE ACTION ORB (Primary Hub Trigger) */}
       <div className="px-2 my-4">
           <button 
             onClick={() => { triggerHaptic?.(); onOpenOrb(); }}
@@ -98,7 +98,7 @@ export default function NavigationRail({
           </button>
       </div>
 
-      {/* 3. BOTTOM ACTIONS */}
+      {/* 3. BOTTOM ACTIONS (SHARED) */}
       <div className="w-full px-2 pt-4 border-t border-zinc-900 flex flex-col gap-1">
          {bottomItems.map((item) => (
             <NavItem key={item.id} item={item} />
