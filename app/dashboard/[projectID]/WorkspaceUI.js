@@ -4,36 +4,40 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { User, X, LogOut } from "lucide-react"; 
 
-// --- 1. CORE COMPONENTS ---
-import NavigationRail from "./components/NavigationRail";
-import Header from "./components/Header";
-import ChatInterface from "./components/ChatInterface";
-import FileExplorer from "./components/FileExplorer";
-import PreviewPane from "./components/PreviewPane";
-import LogicMapView from "./components/LogicMapView"; 
+// --- 1. CORE CLUSTER ---
+import NavigationRail from "./components/core/NavigationRail";
+import ChatInterface from "./components/core/ChatInterface";
+import FileExplorer from "./components/core/FileExplorer";
+import PreviewPane from "./components/core/PreviewPane";
+import Terminal from "./components/core/Terminal";
 
-// --- 2. VISIONARY TOOLS & MENU ---
-import ActionOrbMenu from "./components/visionary/ActionOrbMenu"; // NEW HUB
-import RepoConverter from "./components/RepoConverter";
-import CloneVision from "./components/CloneVision";
-import QRShareModal from "./components/QRShareModal";
-import WelcomeTour from "./components/WelcomeTour";
-import Terminal from "./components/Terminal";
-import AssetAlchemist from "./components/AssetAlchemist";
-import BehaviorRecorder from "./components/BehaviorRecorder";
-import ContextualLens from "./components/ContextualLens";
-import DesignCritique from "./components/DesignCritique";
-import SensorBridge from "./components/SensorBridge";
+// --- 2. VISIONARY CLUSTER ---
+import ActionOrbMenu from "./components/visionary/ActionOrbMenu"; 
+import RepoConverter from "./components/visionary/RepoConverter";
+import CloneVision from "./components/visionary/CloneVision";
+import AssetAlchemist from "./components/visionary/AssetAlchemist";
 
-// --- 3. SYSTEM INTERNALS ---
-import HistoryView from "./components/HistoryView";
-import SettingsView from "./components/SettingsView";
-import DebuggerView from "./components/DebuggerView"; 
+// --- 3. LOGIC CLUSTER ---
+import LogicMapView from "./components/logic/LogicMapView"; 
+import BehaviorRecorder from "./components/logic/BehaviorRecorder";
+import SensorBridge from "./components/logic/SensorBridge";
+
+// --- 4. PROFESSIONAL CLUSTER ---
+import ContextualLens from "./components/professional/ContextualLens";
+import DesignCritique from "./components/professional/DesignCritique";
+
+// --- 5. SHARED CLUSTER (SYSTEM INTERNALS) ---
+import Header from "./components/shared/Header";
+import HistoryView from "./components/shared/HistoryView";
+import SettingsView from "./components/shared/SettingsView";
+import DebuggerView from "./components/shared/DebuggerView"; 
+import QRShareModal from "./components/shared/QRShareModal";
+import WelcomeTour from "./components/shared/WelcomeTour";
 
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
-  // --- 4. INITIAL VFS STATE ---
+  // --- INITIAL VFS STATE ---
   const [projectFiles, setProjectFiles] = useState(project?.files || [
     { 
       name: "MainActivity.kt", 
@@ -51,9 +55,9 @@ export default function WorkspaceUI({ project }) {
   const [previewMode, setPreviewMode] = useState('live'); 
   const [saveStatus, setSaveStatus] = useState('idle'); 
 
-  // --- 5. MODAL & HUB STATES ---
-  const [isOrbOpen, setIsOrbOpen] = useState(false); // Action Orb Hub
-  const [activeTool, setActiveTool] = useState(null); // Central Tool State
+  // --- MODAL & HUB STATES ---
+  const [isOrbOpen, setIsOrbOpen] = useState(false); 
+  const [activeTool, setActiveTool] = useState(null); 
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
@@ -63,7 +67,7 @@ export default function WorkspaceUI({ project }) {
     { role: 'ai', text: `Neural Link Active. Workspace synchronized for "${project?.name || 'New Project'}".` },
   ]);
 
-  // --- 6. AUTO-SAVE SYSTEM ---
+  // --- AUTO-SAVE SYSTEM ---
   useEffect(() => {
     if (!project?._id || project.isDemo) return;
     const saveTimer = setTimeout(async () => {
@@ -83,7 +87,7 @@ export default function WorkspaceUI({ project }) {
     return () => clearTimeout(saveTimer);
   }, [projectFiles, project?._id]);
 
-  // --- 7. CORE UTILITIES ---
+  // --- CORE UTILITIES ---
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
@@ -109,7 +113,7 @@ export default function WorkspaceUI({ project }) {
     triggerHaptic();
     switch(commandType) {
       case 'UPDATE_FILE': updateFile(payload.name, payload.content); break;
-      case 'OPEN_TOOL': setActiveTool(payload.toolId); break; // AI can now open Orb tools
+      case 'OPEN_TOOL': setActiveTool(payload.toolId); break; 
       case 'CREATE_PAGE':
         const newFileName = payload.name.includes('.') ? payload.name : `${payload.name}Activity.kt`;
         updateFile(newFileName, payload.content);
@@ -130,7 +134,7 @@ export default function WorkspaceUI({ project }) {
         <NavigationRail 
             activeView={activeView} 
             setActiveView={setActiveView} 
-            onOpenOrb={() => setIsOrbOpen(true)} // Launcher Trigger
+            onOpenOrb={() => setIsOrbOpen(true)} 
             onExit={() => setIsExitModalOpen(true)}
             triggerHaptic={triggerHaptic}
         />
@@ -149,7 +153,7 @@ export default function WorkspaceUI({ project }) {
 
       {/* --- OVERLAYS --- */}
       <ActionOrbMenu isOpen={isOrbOpen} onClose={() => setIsOrbOpen(false)} onTriggerTool={handleTriggerTool} triggerHaptic={triggerHaptic} />
-      
+
       {/* Dynamic Tool Rendering */}
       {activeTool === 'asset-alchemist' && <AssetAlchemist isOpen={true} onClose={() => setActiveTool(null)} onUpdateFile={updateFile} />}
       {activeTool === 'clone-vision' && <CloneVision isOpen={true} onClose={() => setActiveTool(null)} />}
