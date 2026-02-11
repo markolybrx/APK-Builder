@@ -19,6 +19,13 @@ import QRShareModal from "./components/QRShareModal";
 import WelcomeTour from "./components/WelcomeTour";
 import Terminal from "./components/Terminal";
 
+// --- NEW FEATURES ACTIVATED ---
+import AssetAlchemist from "./components/AssetAlchemist";
+import BehaviorRecorder from "./components/BehaviorRecorder";
+import ContextualLens from "./components/ContextualLens";
+import DesignCritique from "./components/DesignCritique";
+import SensorBridge from "./components/SensorBridge";
+
 // --- 3. SYSTEM INTERNALS ---
 import HistoryView from "./components/HistoryView";
 import SettingsView from "./components/SettingsView";
@@ -53,10 +60,17 @@ export default function WorkspaceUI({ project }) {
 
   // --- 5. MODAL STATES ---
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Feature Modals
   const [isConverterOpen, setIsConverterOpen] = useState(false); 
   const [isCloneOpen, setIsCloneOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isAssetAlchemistOpen, setIsAssetAlchemistOpen] = useState(false);
+  const [isBehaviorRecorderOpen, setIsBehaviorRecorderOpen] = useState(false);
+  const [isContextualLensOpen, setIsContextualLensOpen] = useState(false);
+  const [isDesignCritiqueOpen, setIsDesignCritiqueOpen] = useState(false);
+  const [isSensorBridgeOpen, setIsSensorBridgeOpen] = useState(false);
 
   const [messages, setMessages] = useState([
     { role: 'ai', text: `System Online. VFS linked for "${project?.name || 'New Project'}". Ready for commands.` },
@@ -77,7 +91,7 @@ export default function WorkspaceUI({ project }) {
             files: projectFiles 
           })
         });
-        
+
         if (res.ok) {
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2000);
@@ -129,6 +143,13 @@ export default function WorkspaceUI({ project }) {
         const newFileName = payload.name.includes('.') ? payload.name : `${payload.name}Activity.kt`;
         updateFile(newFileName, payload.content);
         break;
+      
+      // NEW: Feature Triggers via Chat
+      case 'OPEN_CLONE_VISION': setIsCloneOpen(true); break;
+      case 'OPEN_ASSET_ALCHEMIST': setIsAssetAlchemistOpen(true); break;
+      case 'OPEN_DESIGN_CRITIQUE': setIsDesignCritiqueOpen(true); break;
+      case 'OPEN_SENSOR_BRIDGE': setIsSensorBridgeOpen(true); break;
+      case 'OPEN_BEHAVIOR_RECORDER': setIsBehaviorRecorderOpen(true); break;
     }
   };
 
@@ -172,6 +193,8 @@ export default function WorkspaceUI({ project }) {
         onCloneClick={() => { setIsCloneOpen(true); triggerHaptic(); }}
         onShareClick={() => { setIsQRModalOpen(true); triggerHaptic(); }}
         onProfileClick={() => { setIsProfileOpen(true); triggerHaptic(); }}
+        // NEW Handlers
+        onAssetClick={() => { setIsAssetAlchemistOpen(true); triggerHaptic(); }}
       />
 
       <div className="flex flex-1 overflow-hidden relative min-h-0">
@@ -180,10 +203,15 @@ export default function WorkspaceUI({ project }) {
             setActiveView={setActiveView} 
             onExit={() => setIsExitModalOpen(true)}
             triggerHaptic={triggerHaptic}
+            // Feature Triggers
+            onOpenDesignCritique={() => setIsDesignCritiqueOpen(true)}
+            onOpenSensorBridge={() => setIsSensorBridgeOpen(true)}
+            onOpenBehaviorRecorder={() => setIsBehaviorRecorderOpen(true)}
+            onOpenContextualLens={() => setIsContextualLensOpen(true)}
         />
 
         <main className="flex-1 flex flex-col min-w-0 bg-black relative overflow-hidden border-l border-zinc-800">
-          
+
           {/* VIEW ROUTER */}
           {activeView === 'chat' && (
              <ChatInterface 
@@ -219,9 +247,9 @@ export default function WorkspaceUI({ project }) {
           )}
 
           {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
-          
+
           {activeView === 'settings' && <SettingsView project={project} triggerHaptic={triggerHaptic} />}
-          
+
           {activeView === 'debug' && <DebuggerView files={projectFiles} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />}
 
         </main>
@@ -230,11 +258,18 @@ export default function WorkspaceUI({ project }) {
       {/* HORIZON LINE - The Neon Gradient Pulse */}
       <div className="h-[1px] w-full bg-gradient-to-r from-pink-500/50 via-purple-500/50 to-blue-500/50 shrink-0 z-[100] shadow-[0_0_15px_rgba(236,72,153,0.3)]" />
 
-      {/* --- OVERLAYS --- */}
+      {/* --- OVERLAYS & MODALS --- */}
       <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
       <CloneVision isOpen={isCloneOpen} onClose={() => setIsCloneOpen(false)} triggerHaptic={triggerHaptic} />
       <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} triggerHaptic={triggerHaptic} />
       
+      {/* NEW FEATURES */}
+      <AssetAlchemist isOpen={isAssetAlchemistOpen} onClose={() => setIsAssetAlchemistOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
+      <BehaviorRecorder isOpen={isBehaviorRecorderOpen} onClose={() => setIsBehaviorRecorderOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
+      <ContextualLens isOpen={isContextualLensOpen} onClose={() => setIsContextualLensOpen(false)} projectFiles={projectFiles} triggerHaptic={triggerHaptic} />
+      <DesignCritique isOpen={isDesignCritiqueOpen} onClose={() => setIsDesignCritiqueOpen(false)} projectFiles={projectFiles} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
+      <SensorBridge isOpen={isSensorBridgeOpen} onClose={() => setIsSensorBridgeOpen(false)} onUpdateFile={updateFile} triggerHaptic={triggerHaptic} />
+
       {/* ONBOARDING TOUR */}
       {showTour && <WelcomeTour onComplete={() => setShowTour(false)} triggerHaptic={triggerHaptic} />}
 
