@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Zap, LayoutGrid, AlertCircle } from "lucide-react";
 
 // ERROR FIX: Removed useRouter entirely. 
 // We will use standard browser navigation to avoid the crash.
@@ -47,56 +48,77 @@ export default function CreateProject() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 pt-24">
-      <div className="max-w-md w-full bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-xl">
-        <h2 className="text-2xl font-bold text-white mb-6">Create New App</h2>
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
+      
+      {/* Background Glows */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] -z-10" />
+      <div className="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-pink-600/10 rounded-full blur-[80px] -z-10" />
+
+      <div className="max-w-md w-full bg-black p-8 rounded-3xl border border-zinc-800 shadow-2xl relative z-10">
+        
+        {/* Header */}
+        <div className="flex flex-col items-center mb-8">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-blue-500 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(236,72,153,0.3)]">
+                <LayoutGrid className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white">Initialize Project</h2>
+            <p className="text-zinc-500 text-sm mt-1">Configure your neural workspace</p>
+        </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-900/30 border border-red-500/50 text-red-200 text-sm rounded-lg">
-            Error: {error}
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">App Name</label>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-zinc-500 uppercase ml-1">App Name</label>
             <input
               name="name"
               type="text"
               required
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
-              placeholder="e.g. My Fitness Tracker"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition-all"
+              placeholder="e.g. Quantum Fitness Tracker"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-zinc-500 uppercase ml-1">Description</label>
             <textarea
               name="description"
               required
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-none"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all resize-none"
               rows={4}
-              placeholder="Describe what your app should do..."
+              placeholder="Describe the core features and logic..."
             />
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <Link 
-              href="/dashboard" 
-              className="flex-1 py-3 text-center text-slate-400 border border-slate-700 hover:bg-slate-800 rounded-lg transition-colors font-medium"
-            >
-              Cancel
-            </Link>
+          <div className="pt-4 flex flex-col gap-3">
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg py-3 transition-colors disabled:opacity-50"
+              className="w-full py-4 bg-gradient-to-r from-pink-600 to-blue-600 hover:opacity-90 text-white font-bold rounded-xl transition-all shadow-[0_0_20px_rgba(236,72,153,0.2)] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
             >
-              {isLoading ? "Creating..." : "Create App"}
+              {isLoading ? (
+                <>
+                  <Zap className="w-4 h-4 animate-pulse" /> Initializing...
+                </>
+              ) : (
+                "Launch Workspace"
+              )}
             </button>
+            
+            <Link 
+              href="/dashboard" 
+              className="w-full py-3 text-center text-zinc-500 hover:text-white font-bold text-sm transition-colors"
+            >
+              Cancel
+            </Link>
           </div>
-          
+
         </form>
       </div>
     </div>
