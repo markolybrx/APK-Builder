@@ -1,24 +1,42 @@
 "use client";
 
 import { 
-  MessageSquare, Folder, Smartphone, Terminal, 
+  MessageSquare, Folder, Terminal, 
   Clock, Settings, LogOut, Share2,
-  Bug, Play, LayoutGrid 
+  Bug, Play, Wand2, Activity, MousePointerClick, ScanEye 
 } from "lucide-react";
 
-export default function NavigationRail({ activeView, setActiveView, onExit, triggerHaptic }) {
+export default function NavigationRail({ 
+  activeView, 
+  setActiveView, 
+  onExit, 
+  triggerHaptic,
+  // Feature Triggers
+  onOpenDesignCritique,
+  onOpenSensorBridge,
+  onOpenBehaviorRecorder,
+  onOpenContextualLens
+}) {
 
-  // --- NAVIGATION CONFIG ---
-  // Updated icons to match the aesthetic better
+  // --- 1. MAIN VIEWS ---
   const navItems = [
     { id: 'chat', icon: MessageSquare, label: 'Chat' },
     { id: 'files', icon: Folder, label: 'Files' },
-    { id: 'preview', icon: Play, label: 'Preview' }, // Changed to Play for "Live" feel
+    { id: 'preview', icon: Play, label: 'Preview' },
     { id: 'logic', icon: Share2, label: 'Logic' },
     { id: 'debug', icon: Bug, label: 'Debug' }, 
     { id: 'terminal', icon: Terminal, label: 'Term' },
   ];
 
+  // --- 2. VISIONARY TOOLS (Actions) ---
+  const toolItems = [
+    { id: 'critique', icon: Wand2, label: 'Audit', action: onOpenDesignCritique, color: 'group-hover:text-purple-400' },
+    { id: 'sensors', icon: Activity, label: 'Sensors', action: onOpenSensorBridge, color: 'group-hover:text-green-400' },
+    { id: 'behavior', icon: MousePointerClick, label: 'Record', action: onOpenBehaviorRecorder, color: 'group-hover:text-orange-400' },
+    { id: 'lens', icon: ScanEye, label: 'Lens', action: onOpenContextualLens, color: 'group-hover:text-cyan-400' },
+  ];
+
+  // --- 3. SYSTEM ---
   const bottomItems = [
     { id: 'history', icon: Clock, label: 'History' },
     { id: 'settings', icon: Settings, label: 'Config' },
@@ -31,15 +49,23 @@ export default function NavigationRail({ activeView, setActiveView, onExit, trig
     }
   };
 
-  const NavItem = ({ item, isBottom = false }) => {
-    const isActive = activeView === item.id;
+  const NavItem = ({ item, isAction = false }) => {
+    const isActive = !isAction && activeView === item.id;
+    
     return (
       <button
-        onClick={() => handleNavClick(item.id)}
+        onClick={() => {
+            if (isAction) {
+                triggerHaptic?.();
+                item.action?.();
+            } else {
+                handleNavClick(item.id);
+            }
+        }}
         className={`
           group relative flex flex-col items-center justify-center w-full aspect-square rounded-xl transition-all duration-300
           ${isActive ? 'bg-zinc-900' : 'hover:bg-zinc-900/50'}
-          ${isBottom ? 'mt-2' : 'mb-2'}
+          mb-1
         `}
         title={item.label}
       >
@@ -53,22 +79,17 @@ export default function NavigationRail({ activeView, setActiveView, onExit, trig
           className={`w-5 h-5 transition-all duration-300
             ${isActive 
               ? 'text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] scale-105' 
-              : 'text-zinc-600 group-hover:text-zinc-300 group-hover:scale-110'
+              : `text-zinc-600 ${item.color || 'group-hover:text-zinc-300'} group-hover:scale-110`
             }
           `} 
         />
 
-        {/* LABEL (Only visible on hover or active to keep it clean, or keep tiny) */}
+        {/* LABEL */}
         <span className={`text-[8px] font-bold mt-1.5 uppercase tracking-wider transition-colors
            ${isActive ? 'text-zinc-300' : 'text-zinc-700 group-hover:text-zinc-500'}
         `}>
           {item.label}
         </span>
-
-        {/* Hover Tooltip (Desktop) */}
-        <div className="absolute left-14 bg-zinc-900 border border-zinc-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl hidden md:block">
-           {item.label}
-        </div>
       </button>
     );
   };
@@ -81,12 +102,20 @@ export default function NavigationRail({ activeView, setActiveView, onExit, trig
         {navItems.map((item) => (
           <NavItem key={item.id} item={item} />
         ))}
+
+        {/* Divider */}
+        <div className="my-2 h-px bg-zinc-800 w-3/4 mx-auto" />
+        
+        {/* Visionary Tools */}
+        {toolItems.map((item) => (
+           <NavItem key={item.id} item={item} isAction />
+        ))}
       </div>
 
       {/* 2. BOTTOM ACTIONS */}
       <div className="mt-auto w-full px-2 pt-4 border-t border-zinc-900 flex flex-col gap-1">
          {bottomItems.map((item) => (
-            <NavItem key={item.id} item={item} isBottom />
+            <NavItem key={item.id} item={item} />
          ))}
 
          {/* EXIT BUTTON */}
