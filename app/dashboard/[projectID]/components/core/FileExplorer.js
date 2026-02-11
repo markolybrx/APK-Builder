@@ -6,8 +6,8 @@ import { Folder, FileCode, ChevronRight, Search, Plus, FileJson, FileType, Hash 
 export default function FileExplorer({ files = [] }) { 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Helper to check if a file is active (logic can be expanded)
-  const isFileActive = (fileName) => false; // Placeholder for active state logic if needed later
+  // Placeholder for future active file logic
+  const isFileActive = (fileName) => false; 
 
   return (
     <div className="flex flex-col h-full w-full bg-black text-zinc-400 font-sans overflow-hidden border-r border-zinc-800 select-none">
@@ -31,7 +31,7 @@ export default function FileExplorer({ files = [] }) {
       {/* 2. SCROLLABLE FILE TREE ZONE */}
       <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
         <div className="space-y-0.5 font-mono text-sm">
-          
+
           {/* Root App Folder */}
           <FileItem name="app" type="folder" isOpen={true} depth={0}>
             <FileItem name="src" type="folder" isOpen={true} depth={1}>
@@ -80,7 +80,7 @@ export default function FileExplorer({ files = [] }) {
           <FileItem name="build.gradle" type="file" ext="gradle" depth={0} />
           <FileItem name="settings.gradle" type="file" ext="gradle" depth={0} />
         </div>
-        
+
         <div className="h-8" />
       </div>
 
@@ -89,10 +89,10 @@ export default function FileExplorer({ files = [] }) {
         <div className="truncate flex items-center gap-2 text-[9px] text-zinc-600 font-mono">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)] animate-pulse" />
             <span>VFS SYNC:</span>
-            <span className="text-green-500 font-bold">ACTIVE</span>
+            <span className="text-green-500 font-bold uppercase">Active</span>
         </div>
-        <div className="text-[9px] text-zinc-700 font-mono">
-            {files.length} FILES
+        <div className="text-[9px] text-zinc-700 font-mono uppercase">
+            {files.length} Files
         </div>
       </div>
     </div>
@@ -103,9 +103,9 @@ export default function FileExplorer({ files = [] }) {
 function FileItem({ name, type, isOpen: defaultOpen, children, ext, active, depth = 0 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  // Icon Logic
+  // Icon & Color Logic based on File Extension
   let Icon = Folder;
-  let color = "text-zinc-600 group-hover:text-zinc-400"; // Default Folder
+  let color = "text-zinc-600 group-hover:text-zinc-400"; 
 
   if (type === 'file') {
       if (ext === 'kt') { Icon = FileCode; color = "text-blue-500"; }
@@ -114,7 +114,6 @@ function FileItem({ name, type, isOpen: defaultOpen, children, ext, active, dept
       else { Icon = FileCode; color = "text-zinc-500"; }
   }
 
-  // Indentation padding calculation
   const paddingLeft = `${depth * 12 + 12}px`;
 
   return (
@@ -135,9 +134,9 @@ function FileItem({ name, type, isOpen: defaultOpen, children, ext, active, dept
             <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-90 text-zinc-400' : 'text-zinc-600'}`} />
           )}
         </span>
-        
+
         <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${active ? color : color}`} />
-        
+
         <span className={`truncate text-[10px] tracking-tight transition-colors ${active ? 'text-white font-bold' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
             {name}
         </span>
@@ -145,7 +144,7 @@ function FileItem({ name, type, isOpen: defaultOpen, children, ext, active, dept
 
       {isOpen && children && (
         <div className="transition-all relative">
-            {/* Tree Guide Line */}
+            {/* Indentation Guide Line */}
             <div 
                 className="absolute w-px bg-zinc-800/50 h-full top-0" 
                 style={{ left: `${parseInt(paddingLeft) + 7}px` }} 
