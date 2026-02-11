@@ -3,9 +3,9 @@ import { ObjectId } from "mongodb";
 import WorkspaceUI from "./WorkspaceUI"; 
 
 export default async function ProjectEditor({ params }) {
-  // CRITICAL FIX FOR NEXT.JS 15: params must be awaited!
+  // --- 1. NEXT.JS 15 PARAM RESOLUTION ---
   const resolvedParams = await params; 
-  const id = resolvedParams?.projectId; 
+  const id = resolvedParams?.projectID; // Matched to your exact folder [projectID]
 
   let project = null;
 
@@ -14,10 +14,10 @@ export default async function ProjectEditor({ params }) {
         const client = await clientPromise;
         const db = client.db();
         const rawProject = await db.collection("projects").findOne({ _id: new ObjectId(id) });
-        
+
         if (rawProject) {
-            // DEEP SANITIZATION: Converts Dates and ObjectIds to Strings
-            // This prevents "Serialization Error" crashes on the client
+            // --- 2. DEEP SERIALIZATION ---
+            // Ensures _id and userId are strings before hitting the Client Component
             project = JSON.parse(JSON.stringify({
                 ...rawProject,
                 _id: rawProject._id.toString(),
@@ -26,17 +26,19 @@ export default async function ProjectEditor({ params }) {
         }
     }
   } catch (error) {
-    console.error("DB Error:", error);
+    console.error("Critical Database Error:", error);
   }
 
-  // FALLBACK DATA (Prevents crash if DB fails)
+  // --- 3. FAIL-SAFE FALLBACK ---
+  // If the database is unreachable or the ID is invalid, provide a Demo Context
   if (!project) {
     project = {
       _id: "demo-id",
       name: "Debug Project",
       packageName: "com.debug.app",
-      createdAt: new Date().toISOString(), // Must be a string, not a Date object!
-      isDemo: true
+      createdAt: new Date().toISOString(), 
+      isDemo: true,
+      files: [] // Initialize empty VFS for WorkspaceUI
     };
   }
 
