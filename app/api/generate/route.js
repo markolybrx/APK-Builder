@@ -33,7 +33,7 @@ export async function POST(req) {
     const fullPrompt = `${SYSTEM_PROMPT}\n\nCURRENT FILES:\n${fileContext}\n\nUSER COMMAND: ${latestUserMessage}`;
 
     // 3. CALL GEMINI 2.5 FLASH
-    // UPDATED: Using 'gemini-2.5-flash' which matches your quota dashboard
+    // Added maxOutputTokens to prevent JSON truncation
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
@@ -44,23 +44,34 @@ export async function POST(req) {
           parts: [{ text: fullPrompt }]
         }],
         generationConfig: {
-          responseMimeType: "application/json"
+          responseMimeType: "application/json",
+          maxOutputTokens: 8192, // <--- CRITICAL FIX: Allows longer responses
+          temperature: 0.7
         }
       })
     });
 
     const data = await response.json();
-    
+
     if (data.error) {
       console.error("Gemini API Error:", JSON.stringify(data.error, null, 2));
       throw new Error(data.error.message);
     }
 
-    // 4. PARSE RESPONSE
-    const rawText = data.candidates[0].content.parts[0].text;
-    const aiContent = JSON.parse(rawText);
-
-    return NextResponse.json(aiContent);
+    // 4. ROBUST PARSING
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    
+    try {
+        const aiContent = JSON.parse(rawText);
+        return NextResponse.json(aiContent);
+    } catch (parseError) {
+        console.error("JSON Truncation Error. Raw Text Length:", rawText.length);
+        console.error("Raw Text Tail:", rawText.slice(-100)); // Log last 100 chars to see where it broke
+        return NextResponse.json({ 
+            message: "The Neural Link signal was truncated. Please try a smaller change.", 
+            files: [] 
+        });
+    }
 
   } catch (error) {
     console.error("Backend Handler Error:", error);
