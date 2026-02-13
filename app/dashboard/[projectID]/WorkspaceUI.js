@@ -35,7 +35,7 @@ import SettingsView from "./components/shared/SettingsView";
 import DebuggerView from "./components/shared/DebuggerView"; 
 import QRShareModal from "./components/shared/QRShareModal";
 
-// --- NEW COMPONENT: TOP TAB NAVIGATION ---
+// --- TOP TAB NAVIGATION ---
 const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }) => {
   const tabs = [
     { id: 'chat', label: 'Chat', icon: MessageSquare },
@@ -43,12 +43,12 @@ const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }
     { id: 'preview', label: 'Preview', icon: Smartphone },
     { id: 'logic', label: 'Logic', icon: GitBranch },
     { id: 'terminal', label: 'Console', icon: TerminalIcon },
-    // ADDED: Dedicated Tools Trigger
+    // Dedicated Tools Trigger
     { id: 'tools', label: 'Tools', icon: Sparkles, isAction: true }, 
   ];
 
   return (
-    <div className="h-10 border-b border-zinc-900 bg-black flex items-center px-4 gap-1 shrink-0 z-40 select-none">
+    <div className="h-12 border-b border-zinc-900 bg-black flex items-center px-4 gap-2 shrink-0 z-40 select-none">
       {tabs.map((tab) => {
         const isActive = activeView === tab.id;
         return (
@@ -63,17 +63,17 @@ const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }
                 }
             }}
             className={`
-              flex items-center justify-center gap-2 px-3 h-7 rounded-md text-[11px] font-medium transition-all
+              flex items-center justify-center gap-2 px-4 h-8 rounded-full text-[11px] font-medium transition-all leading-none
               ${isActive && !tab.isAction
-                ? 'bg-zinc-800 text-zinc-100 shadow-sm' 
+                ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/50' 
                 : tab.isAction 
-                    ? 'text-pink-500 hover:bg-pink-500/10' 
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'
+                    ? 'text-pink-500 bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20' 
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'
               }
             `}
           >
             <tab.icon className={`w-3.5 h-3.5 ${isActive || tab.isAction ? 'text-pink-500' : 'text-zinc-600'}`} />
-            {tab.label}
+            <span className="relative top-[0.5px]">{tab.label}</span>
           </button>
         );
       })}
@@ -84,6 +84,7 @@ const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
+  // --- INITIAL VFS STATE ---
   const [projectFiles, setProjectFiles] = useState(project?.files || [
     { 
       name: "MainActivity.kt", 
@@ -121,6 +122,7 @@ export default function WorkspaceUI({ project }) {
     return () => clearTimeout(saveTimer);
   }, [projectFiles, project?._id]);
 
+  // --- UTILITIES ---
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
@@ -170,7 +172,7 @@ export default function WorkspaceUI({ project }) {
       <WorkspaceTabs 
         activeView={activeView} 
         setActiveView={setActiveView} 
-        onOpenTools={() => setIsOrbOpen(true)}
+        onOpenTools={() => setIsOrbOpen(true)} // Opens Visionary Hub
         triggerHaptic={triggerHaptic} 
       />
 
@@ -206,11 +208,13 @@ export default function WorkspaceUI({ project }) {
           />
         )}
         
+        {/* Utility Views */}
         {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
         {activeView === 'settings' && <SettingsView project={project} />}
       </div>
 
-      {/* --- VISIONARY TOOLS MENU (ADDED BACK) --- */}
+      {/* --- VISIONARY TOOLS MENU --- */}
+      {/* This renders the menu when "Tools" tab is clicked */}
       <ActionOrbMenu 
         isOpen={isOrbOpen} 
         onClose={() => setIsOrbOpen(false)} 
