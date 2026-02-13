@@ -1,46 +1,46 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Circle, Square, Fingerprint, X, Activity, MousePointerClick } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Circle, Square, Fingerprint, X, Activity, MousePointerClick, Zap } from "lucide-react";
 
 export default function BehaviorRecorder({ isOpen, onClose, onUpdateFile, triggerHaptic }) {
   const [isRecording, setIsRecording] = useState(false);
   const [events, setEvents] = useState([]);
-  const [processing, setProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const scrollRef = useRef(null);
 
-  // --- 1. STATE RESET ON OPEN ---
+  // Auto-scroll the event log
   useEffect(() => {
-    if (isOpen) {
-        setEvents([]);
-        setIsRecording(false);
-        setProcessing(false);
+    if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [isOpen]);
+  }, [events]);
 
   if (!isOpen) return null;
 
-  // --- 2. GESTURE SIMULATION ENGINE ---
-  const toggleRecording = () => {
+  // --- GESTURE SIMULATION ---
+  const handleToggle = () => {
     triggerHaptic?.();
-    if (!isRecording) {
-      setEvents([]);
-      setIsRecording(true);
-
-      // Simulate capturing stream of user inputs
-      simulateGestures();
+    
+    if (isRecording) {
+        // Stop & Process
+        setIsRecording(false);
+        finishRecording();
     } else {
-      setIsRecording(false);
-      finishRecording();
+        // Start Recording
+        setEvents([]);
+        setIsRecording(true);
+        simulateGestures();
     }
   };
 
   const simulateGestures = () => {
     const mockEvents = [
-        { type: 'touch_down', target: 'root_view', coords: 'x:45, y:230', time: '0.1s' },
-        { type: 'tap', target: 'btn_login', id: '@+id/btn_login', time: '0.5s' },
-        { type: 'ime_input', target: 'et_email', value: 'visionary@user.com', time: '1.2s' },
-        { type: 'swipe', dir: 'vertical', target: 'scroll_container', velocity: '800dp/s', time: '2.4s' },
-        { type: 'tap', target: 'btn_confirm', id: '@+id/btn_confirm', time: '3.1s' }
+        { type: 'TOUCH_DOWN', target: 'root_view', coords: 'x:45, y:230', time: '0.1s' },
+        { type: 'TAP', target: 'btn_login', id: '@+id/btn_login', time: '0.5s' },
+        { type: 'IME_INPUT', target: 'et_email', value: 'visionary@user.com', time: '1.2s' },
+        { type: 'SWIPE', dir: 'vertical', target: 'scroll_container', velocity: '800dp/s', time: '2.4s' },
+        { type: 'TAP', target: 'btn_confirm', id: '@+id/btn_confirm', time: '3.1s' }
     ];
 
     let current = 0;
@@ -54,13 +54,10 @@ export default function BehaviorRecorder({ isOpen, onClose, onUpdateFile, trigge
     }, 800);
   };
 
-  // --- 3. LOGIC COMPILER ---
   const finishRecording = () => {
-    setProcessing(true);
-    triggerHaptic?.();
+    setIsProcessing(true);
     
     setTimeout(() => {
-        // Pseudo-Compiler: Gesture -> Kotlin
         const logicCode = `
 // [BEHAVIOR RECORDER] Generated Interaction Logic
 val btnLogin = findViewById<Button>(R.id.btn_login)
@@ -69,108 +66,107 @@ btnLogin.setOnClickListener {
     val intent = Intent(this, DashboardActivity::class.java)
     startActivity(intent)
 }`;
-        
-        // Push to Workspace (Simulated Append)
-        if (onUpdateFile) {
-             onUpdateFile("MainActivity.kt", logicCode); 
-        }
-
-        setProcessing(false);
+        if (onUpdateFile) onUpdateFile("MainActivity.kt", logicCode);
+        setIsProcessing(false);
         onClose();
     }, 2000);
   };
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-[100] flex justify-center pb-8 pointer-events-none">
+    <div className="absolute inset-x-0 bottom-24 z-[100] flex justify-center pointer-events-none px-4">
 
-      {/* FLOATING RECORDER ISLAND (Pointer Events Active) */}
-      <div className="bg-black/90 backdrop-blur-xl border border-zinc-800 p-1.5 rounded-[2.5rem] shadow-2xl w-full max-w-lg pointer-events-auto animate-in slide-in-from-bottom-10 relative overflow-hidden ring-1 ring-white/5">
+      {/* FLOATING HUD CAPSULE */}
+      <div className="bg-[#09090b]/90 backdrop-blur-2xl border border-zinc-800 p-1.5 rounded-[2.5rem] shadow-2xl w-full max-w-md pointer-events-auto animate-in slide-in-from-bottom-10 relative overflow-hidden ring-1 ring-white/5">
 
-        {/* Recording Indicator Border */}
+        {/* Recording Glow Pulse */}
         {isRecording && (
-            <div className="absolute inset-0 rounded-[2.5rem] border-2 border-red-500/50 animate-pulse pointer-events-none" />
+            <div className="absolute inset-0 rounded-[2.5rem] border-2 border-red-500/20 animate-pulse pointer-events-none z-20" />
         )}
 
-        <div className="bg-zinc-900/80 rounded-[2.2rem] p-5 border border-zinc-800/50 relative overflow-hidden">
-            
-            {/* Header HUD */}
-            <div className="flex items-center justify-between mb-5">
+        <div className="bg-zinc-900/50 rounded-[2.2rem] p-5 border border-zinc-800/50 relative overflow-hidden flex flex-col gap-4">
+
+            {/* HEADER */}
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${isRecording ? 'bg-red-500 shadow-[0_0_25px_rgba(239,68,68,0.5)]' : 'bg-zinc-800'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 
+                        ${isRecording 
+                            ? 'bg-red-500/20 border border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
+                            : 'bg-zinc-800 border border-zinc-700'
+                        }`}
+                    >
                         {isRecording ? (
-                            <Activity className="w-5 h-5 text-white animate-pulse" /> 
+                            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
                         ) : (
-                            <Fingerprint className="w-6 h-6 text-zinc-400" />
+                            <Fingerprint className="w-5 h-5 text-zinc-400" />
                         )}
                     </div>
                     <div>
-                        <h4 className="text-white font-bold text-sm tracking-wide uppercase">
-                            {isRecording ? <span className="text-red-500 animate-pulse">Recording Input...</span> : "Behavior Recorder"}
+                        <h4 className="text-white font-bold text-xs tracking-wide uppercase flex items-center gap-2">
+                            {isRecording ? <span className="text-red-400 animate-pulse">Recording Input</span> : "Behavior Recorder"}
+                            {isRecording && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />}
                         </h4>
-                        <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
-                            {isRecording ? "Capturing Touch Stream" : "Gesture-to-Code Engine"}
+                        <p className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider">
+                            {isRecording ? "Capturing Touch Stream..." : "Gesture-to-Code Engine"}
                         </p>
                     </div>
                 </div>
 
-                <div className="flex gap-2">
-                     {!isRecording && (
-                        <button onClick={onClose} className="p-2.5 hover:bg-zinc-800 rounded-full text-zinc-500 hover:text-white transition-colors border border-transparent hover:border-zinc-700">
-                            <X className="w-5 h-5" />
-                        </button>
-                     )}
+                {!isRecording && (
+                    <button onClick={onClose} className="p-2 bg-zinc-800/50 hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-white transition-colors border border-zinc-700/50">
+                        <X className="w-4 h-4" />
+                    </button>
+                )}
+            </div>
+
+            {/* TERMINAL STREAM */}
+            <div 
+                ref={scrollRef}
+                className={`
+                    transition-all duration-500 ease-in-out bg-black/50 rounded-xl border border-zinc-800/50 overflow-hidden relative
+                    ${(isRecording || events.length > 0) ? 'h-40 p-4' : 'h-0 border-0'}
+                `}
+            >
+                {/* Scanline Overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,18,18,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none opacity-20 z-10" />
+                
+                <div className="font-mono text-[9px] space-y-2 relative z-0">
+                    {events.map((ev, i) => (
+                        <div key={i} className="flex gap-3 animate-in slide-in-from-left-2 items-center text-zinc-400">
+                            <span className="text-zinc-600 w-8 text-right opacity-50">{ev.time}</span>
+                            <span className="text-pink-400 font-bold uppercase w-16">{ev.type}</span>
+                            <span className="truncate flex-1 text-zinc-300">➜ {ev.target}</span>
+                        </div>
+                    ))}
+                    {isProcessing && (
+                         <div className="flex items-center gap-2 text-green-400 animate-pulse font-bold mt-2">
+                            <Zap className="w-3 h-3" />
+                            <span>Transpiling to Kotlin...</span>
+                         </div>
+                    )}
                 </div>
             </div>
 
-            {/* Live Event Stream */}
-            {(isRecording || events.length > 0) && (
-                <div className="mb-4 h-36 bg-black rounded-xl border border-zinc-800 p-4 overflow-y-auto custom-scrollbar font-mono text-[10px] shadow-inner relative">
-                     {/* Scanline Effect */}
-                    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,18,18,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] pointer-events-none opacity-20" />
-                    
-                    {events.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-zinc-700 italic uppercase tracking-widest">
-                            Waiting for touch events...
-                        </div>
-                    ) : (
-                        events.map((ev, i) => (
-                            <div key={i} className="flex gap-3 mb-2 animate-in slide-in-from-left-4 items-center">
-                                <span className="text-zinc-600 min-w-[30px]">[{ev.time}]</span>
-                                <span className="text-pink-500 font-bold uppercase min-w-[60px]">{ev.type}</span>
-                                <span className="text-zinc-400 truncate flex-1">➜ {ev.target} <span className="text-zinc-600">{ev.coords}</span></span>
-                            </div>
-                        ))
-                    )}
-                    {processing && (
-                        <div className="text-green-400 font-bold animate-pulse mt-2 flex items-center gap-2">
-                            <MousePointerClick className="w-3 h-3" />
-                            &gt; Transpiling to Kotlin...
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Action Controller */}
+            {/* ACTION BUTTON */}
             <button 
-                onClick={toggleRecording}
-                disabled={processing}
+                onClick={handleToggle}
+                disabled={isProcessing}
                 className={`
-                    w-full py-4 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all
+                    w-full py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all
                     ${isRecording 
-                        ? 'bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700' 
-                        : 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-[0_0_30px_rgba(220,38,38,0.25)] hover:scale-[1.02]'
+                        ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 border border-zinc-700' 
+                        : 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]'
                     }
                 `}
             >
-                {processing ? (
-                    "Processing Logic..."
+                {isProcessing ? (
+                    "Processing..."
                 ) : isRecording ? (
                     <>
-                        <Square className="w-3 h-3 fill-current" /> Stop & Generate Logic
+                        <Square className="w-3 h-3 fill-current" /> Stop & Compile
                     </>
                 ) : (
                     <>
-                        <Circle className="w-3 h-3 fill-current" /> Init Recording
+                        <Circle className="w-3 h-3 fill-current text-red-500" /> Start Capture
                     </>
                 )}
             </button>
