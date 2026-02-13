@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { 
   ArrowUp, Bot, User, Cpu, FileCode, CheckCircle2, 
-  Loader2, ChevronDown, ChevronRight, Zap, Sparkles 
+  Loader2, ChevronDown, ChevronRight, Zap, Sparkles, AlertTriangle 
 } from "lucide-react";
 
 // --- THE "GHOST" THOUGHT MODULE ---
@@ -102,7 +102,6 @@ export default function ChatInterface({
   const [currentThoughtSteps, setCurrentThoughtSteps] = useState([]);
   
   const scrollRef = useRef(null);
-  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -111,10 +110,15 @@ export default function ChatInterface({
   }, [messages, currentThoughtSteps, isTyping]);
 
   const simulateThinkingProcess = () => {
+    // Immediate feedback
     setCurrentThoughtSteps([{ text: "Reading app structure...", icon: FileCode }]);
-    setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Analyzing request intent...", icon: Cpu }]), 800);
-    setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Checking current theme setup...", icon: Sparkles }]), 1800);
-    setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Generating Kotlin/XML logic...", icon: Zap }]), 2800);
+    
+    // Scheduled updates
+    const t1 = setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Analyzing request intent...", icon: Cpu }]), 800);
+    const t2 = setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Checking current theme setup...", icon: Sparkles }]), 1800);
+    const t3 = setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Generating Kotlin/XML logic...", icon: Zap }]), 2800);
+    
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   };
 
   const handleSendMessage = async () => {
@@ -125,42 +129,47 @@ export default function ChatInterface({
     setIsTyping(true);
     triggerHaptic?.();
 
-    // Reset abort controller
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
-
     // 1. Add User Message
     const userMsg = { role: 'user', text: text };
     setMessages(prev => [...prev, userMsg]);
 
     // 2. Start Thinking
-    simulateThinkingProcess();
-
-    // Safety Timeout (60s)
-    const timeoutId = setTimeout(() => {
-        if (abortControllerRef.current) abortControllerRef.current.abort();
-    }, 60000);
+    const clearTimers = simulateThinkingProcess();
 
     try {
-        const response = await fetch('/api/generate', {
+        // 3. HARD TIMEOUT RACE CONDITION (45 Seconds)
+        const fetchPromise = fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 messages: [...messages, userMsg],
                 projectFiles: projectFiles 
-            }),
-            signal: abortControllerRef.current.signal
+            })
         });
 
-        clearTimeout(timeoutId);
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Request timed out (45s limit)")), 45000)
+        );
 
-        const data = await response.json();
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
 
-        if (!response.ok) throw new Error(data.message || "Neural Link Failed");
+        // 4. Handle HTTP Errors
+        if (!response.ok) {
+            throw new Error(`Server Error: ${response.status} ${response.statusText}`);
+        }
 
+        // 5. Safe JSON Parsing (Prevents crash if API returns HTML error)
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            throw new Error("Invalid response from Brain (Not JSON). Check API logs.");
+        }
+
+        // 6. Success Processing
         const aiMsg = { 
             role: 'ai', 
-            text: data.message,
+            text: data.message || "Update processed.",
             files: data.files || [],
             thoughts: [
                 { text: "Read app structure", icon: FileCode },
@@ -185,16 +194,13 @@ export default function ChatInterface({
 
     } catch (error) {
         console.error("AI Error:", error);
-        let errorMessage = "⚠️ Connection interrupted.";
-        
-        if (error.name === 'AbortError') {
-            errorMessage = "⚠️ Request timed out. Try a smaller task.";
-        } else {
-            errorMessage = `⚠️ Error: ${error.message}`;
-        }
-
-        setMessages(prev => [...prev, { role: 'ai', text: errorMessage }]);
+        setMessages(prev => [...prev, { 
+            role: 'ai', 
+            text: `⚠️ Error: ${error.message}. Please check your internet or API key.` 
+        }]);
     } finally {
+        // 7. ALWAYS RESET STATE
+        clearTimers && clearTimers();
         setIsTyping(false);
         setCurrentThoughtSteps([]);
         triggerHaptic?.();
@@ -202,7 +208,7 @@ export default function ChatInterface({
   };
 
   return (
-    // UPDATED: h-[100dvh] for mobile viewport safety
+    // Fixed height for mobile
     <div className="h-[100dvh] w-full bg-black relative overflow-hidden font-sans flex flex-col">
       
       {/* MESSAGE STREAM */}
@@ -210,7 +216,6 @@ export default function ChatInterface({
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 pb-32 space-y-8 custom-scrollbar relative"
       >
-         {/* Grid Background */}
          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
          {messages.length === 0 && (
@@ -231,13 +236,13 @@ export default function ChatInterface({
                     <div className="w-full max-w-2xl">
                         <div className="flex gap-4">
                             <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-tr from-zinc-800 to-zinc-700 border border-zinc-700 flex items-center justify-center shrink-0">
-                                <Sparkles className="w-3 h-3 text-zinc-400" />
+                                {msg.text.includes("Error") ? <AlertTriangle className="w-3 h-3 text-red-400" /> : <Sparkles className="w-3 h-3 text-zinc-400" />}
                             </div>
                             
                             <div className="flex-1 min-w-0">
                                 {msg.thoughts && <NeuralThought steps={msg.thoughts} isComplete={true} />}
                                 
-                                <div className="text-zinc-300 text-[13px] leading-relaxed mt-2 whitespace-pre-wrap">
+                                <div className={`text-[13px] leading-relaxed mt-2 whitespace-pre-wrap ${msg.text.includes("Error") ? 'text-red-400' : 'text-zinc-300'}`}>
                                     {msg.text}
                                 </div>
 
@@ -263,8 +268,7 @@ export default function ChatInterface({
          )}
       </div>
 
-      {/* FLOATING INPUT ISLAND */}
-      {/* UPDATED: 'fixed' positioning ensures it stays pinned to the screen bottom regardless of container scroll */}
+      {/* FLOATING INPUT ISLAND (FIXED POSITION) */}
       <div className="fixed bottom-6 left-0 right-0 px-4 z-50 flex justify-center pointer-events-none mb-safe">
          <div className="w-full max-w-2xl pointer-events-auto relative group">
             
