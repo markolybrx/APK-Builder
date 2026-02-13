@@ -3,15 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { 
   ArrowUp, Bot, User, Cpu, FileCode, CheckCircle2, 
-  Loader2, ChevronDown, ChevronRight, Zap, Sparkles 
+  Loader2, ChevronDown, ChevronRight, Zap, Sparkles, AlertCircle
 } from "lucide-react";
 
-// --- 1. THE "GHOST" THOUGHT MODULE (a0.dev Style) ---
+// --- THE "GHOST" THOUGHT MODULE ---
 const NeuralThought = ({ steps, isComplete }) => {
   const [isExpanded, setIsExpanded] = useState(!isComplete);
   const [elapsed, setElapsed] = useState(0);
 
-  // Real-time timer: "Thought for X seconds"
   useEffect(() => {
     if (isComplete) return;
     const startTime = Date.now();
@@ -21,10 +20,8 @@ const NeuralThought = ({ steps, isComplete }) => {
     return () => clearInterval(timer);
   }, [isComplete]);
 
-  // Auto-collapse on completion
   useEffect(() => {
     if (isComplete) {
-        // Keep it open briefly to show the green check, then collapse
         const timeout = setTimeout(() => setIsExpanded(false), 2000); 
         return () => clearTimeout(timeout);
     }
@@ -65,7 +62,6 @@ const NeuralThought = ({ steps, isComplete }) => {
   );
 };
 
-// --- 2. FILE DIFF CARD (The "File Changed" UI) ---
 const FileDiffCard = ({ files }) => {
     if (!files || files.length === 0) return null;
     return (
@@ -106,18 +102,16 @@ export default function ChatInterface({
   const [currentThoughtSteps, setCurrentThoughtSteps] = useState([]);
   
   const scrollRef = useRef(null);
+  const abortControllerRef = useRef(null); // Reference for aborting requests
 
-  // Auto-scroll logic
   useEffect(() => {
     if (scrollRef.current) {
         scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages, currentThoughtSteps, isTyping]);
 
-  // --- 3. THINKING SIMULATION ENGINE ---
   const simulateThinkingProcess = () => {
     setCurrentThoughtSteps([{ text: "Reading app structure...", icon: FileCode }]);
-    
     setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Analyzing request intent...", icon: Cpu }]), 800);
     setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Checking current theme setup...", icon: Sparkles }]), 1800);
     setTimeout(() => setCurrentThoughtSteps(p => [...p, { text: "Generating Kotlin/XML logic...", icon: Zap }]), 2800);
@@ -131,12 +125,21 @@ export default function ChatInterface({
     setIsTyping(true);
     triggerHaptic?.();
 
+    // Reset abort controller
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+
     // 1. Add User Message
     const userMsg = { role: 'user', text: text };
     setMessages(prev => [...prev, userMsg]);
 
-    // 2. Start Thinking Visualization
+    // 2. Start Thinking
     simulateThinkingProcess();
+
+    // Safety Timeout (60s)
+    const timeoutId = setTimeout(() => {
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+    }, 60000);
 
     try {
         const response = await fetch('/api/generate', {
@@ -145,16 +148,18 @@ export default function ChatInterface({
             body: JSON.stringify({ 
                 messages: [...messages, userMsg],
                 projectFiles: projectFiles 
-            })
+            }),
+            signal: abortControllerRef.current.signal
         });
+
+        clearTimeout(timeoutId);
 
         const data = await response.json();
 
         if (!response.ok) throw new Error(data.message || "Neural Link Failed");
 
-        // 3. Process Response & Files
         const aiMsg = { 
-            role: 'ai', // Using 'ai' to match your existing props
+            role: 'ai', 
             text: data.message,
             files: data.files || [],
             thoughts: [
@@ -168,7 +173,6 @@ export default function ChatInterface({
 
         setMessages(prev => [...prev, aiMsg]);
 
-        // 4. Apply Updates
         if (data.files && Array.isArray(data.files)) {
             data.files.forEach(file => {
                  onExecute('UPDATE_FILE', { 
@@ -176,14 +180,22 @@ export default function ChatInterface({
                     content: file.content 
                  });
             });
-            // Force Preview Update
             if (setPreviewMode) setPreviewMode('live'); 
         }
 
     } catch (error) {
         console.error("AI Error:", error);
-        setMessages(prev => [...prev, { role: 'ai', text: "⚠️ Connection interrupted. Please check your API Key." }]);
+        let errorMessage = "⚠️ Connection interrupted.";
+        
+        if (error.name === 'AbortError') {
+            errorMessage = "⚠️ Request timed out. Try a smaller task.";
+        } else {
+            errorMessage = `⚠️ Error: ${error.message}`;
+        }
+
+        setMessages(prev => [...prev, { role: 'ai', text: errorMessage }]);
     } finally {
+        // ALWAYS Reset Typing State
         setIsTyping(false);
         setCurrentThoughtSteps([]);
         triggerHaptic?.();
@@ -191,17 +203,16 @@ export default function ChatInterface({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-black relative overflow-hidden font-sans">
+    // Changed h-full to h-[100dvh] for mobile viewport stability
+    <div className="h-[100dvh] w-full bg-black relative overflow-hidden font-sans flex flex-col">
       
       {/* MESSAGE STREAM */}
       <div 
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 pb-32 space-y-8 custom-scrollbar relative"
       >
-         {/* Subtle Grid Pattern */}
          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
-         {/* Empty State */}
          {messages.length === 0 && (
              <div className="h-[60vh] flex flex-col items-center justify-center opacity-30 pointer-events-none">
                  <Bot className="w-10 h-10 text-zinc-700 mb-4" />
@@ -213,29 +224,23 @@ export default function ChatInterface({
             <div key={i} className={`flex flex-col relative z-10 animate-in fade-in slide-in-from-bottom-3 duration-500 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                 
                 {msg.role === 'user' ? (
-                    // USER BUBBLE
                     <div className="max-w-[85%] bg-zinc-800 text-zinc-100 px-4 py-2.5 rounded-[1.2rem] rounded-tr-sm text-[13px] leading-relaxed shadow-sm border border-zinc-700/50">
                         {msg.text}
                     </div>
                 ) : (
-                    // AI RESPONSE BLOCK
                     <div className="w-full max-w-2xl">
                         <div className="flex gap-4">
-                            {/* Avatar */}
                             <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-tr from-zinc-800 to-zinc-700 border border-zinc-700 flex items-center justify-center shrink-0">
                                 <Sparkles className="w-3 h-3 text-zinc-400" />
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                                {/* Completed Thoughts (if any) */}
                                 {msg.thoughts && <NeuralThought steps={msg.thoughts} isComplete={true} />}
                                 
-                                {/* Text Response */}
                                 <div className="text-zinc-300 text-[13px] leading-relaxed mt-2 whitespace-pre-wrap">
                                     {msg.text}
                                 </div>
 
-                                {/* File Changes */}
                                 {msg.files && msg.files.length > 0 && <FileDiffCard files={msg.files} />}
                             </div>
                         </div>
@@ -244,7 +249,6 @@ export default function ChatInterface({
             </div>
          ))}
 
-         {/* ACTIVE TYPING INDICATOR (The "Ghost" Thought) */}
          {isTyping && (
              <div className="w-full max-w-2xl animate-in fade-in duration-300">
                 <div className="flex gap-4">
@@ -259,11 +263,11 @@ export default function ChatInterface({
          )}
       </div>
 
-      {/* LEVITATING INPUT BAR */}
-      <div className="absolute bottom-6 left-0 right-0 px-4 z-30 flex justify-center pointer-events-none">
+      {/* FLOATING INPUT ISLAND */}
+      {/* Positioned absolutely at bottom-6 with z-50 to ensure floating behavior */}
+      <div className="absolute bottom-6 left-0 right-0 px-4 z-50 flex justify-center pointer-events-none mb-safe">
          <div className="w-full max-w-2xl pointer-events-auto relative group">
             
-            {/* Ambient Glow on Focus */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-zinc-700 to-zinc-600 rounded-[2rem] blur opacity-0 group-focus-within:opacity-20 transition duration-500" />
             
             <div className="relative flex items-end gap-2 bg-[#121212]/90 backdrop-blur-xl border border-zinc-800 p-1.5 rounded-[24px] shadow-2xl ring-1 ring-white/5">
