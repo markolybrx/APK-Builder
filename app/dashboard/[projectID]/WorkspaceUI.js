@@ -48,6 +48,7 @@ const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }
   ];
 
   return (
+    // Fixed alignment: Removed leading-none, added balanced padding
     <div className="h-12 border-b border-zinc-900 bg-black flex items-center px-4 gap-2 shrink-0 z-40 select-none">
       {tabs.map((tab) => {
         const isActive = activeView === tab.id;
@@ -63,7 +64,7 @@ const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }
                 }
             }}
             className={`
-              flex items-center justify-center gap-2 px-4 h-8 rounded-full text-[11px] font-medium transition-all leading-none
+              flex items-center justify-center gap-2 px-4 h-8 rounded-full text-[11px] font-medium transition-all
               ${isActive && !tab.isAction
                 ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/50' 
                 : tab.isAction 
@@ -73,7 +74,7 @@ const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }
             `}
           >
             <tab.icon className={`w-3.5 h-3.5 ${isActive || tab.isAction ? 'text-pink-500' : 'text-zinc-600'}`} />
-            <span className="relative top-[0.5px]">{tab.label}</span>
+            <span>{tab.label}</span>
           </button>
         );
       })}
