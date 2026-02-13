@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { 
   MessageSquare, Code2, Smartphone, GitBranch, 
-  Settings, Terminal as TerminalIcon
+  Settings, Terminal as TerminalIcon, Sparkles
 } from "lucide-react"; 
 
 // --- 1. CORE CLUSTER ---
@@ -28,7 +28,7 @@ import SensorBridge from "./components/logic/SensorBridge";
 import ContextualLens from "./components/professional/ContextualLens";
 import DesignCritique from "./components/professional/DesignCritique";
 
-// --- 5. SHARED CLUSTER (SYSTEM INTERNALS) ---
+// --- 5. SHARED CLUSTER ---
 import Header from "./components/shared/Header";
 import HistoryView from "./components/shared/HistoryView";
 import SettingsView from "./components/shared/SettingsView";
@@ -36,13 +36,15 @@ import DebuggerView from "./components/shared/DebuggerView";
 import QRShareModal from "./components/shared/QRShareModal";
 
 // --- NEW COMPONENT: TOP TAB NAVIGATION ---
-const WorkspaceTabs = ({ activeView, setActiveView, triggerHaptic }) => {
+const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }) => {
   const tabs = [
     { id: 'chat', label: 'Chat', icon: MessageSquare },
     { id: 'files', label: 'Code', icon: Code2 },
     { id: 'preview', label: 'Preview', icon: Smartphone },
     { id: 'logic', label: 'Logic', icon: GitBranch },
     { id: 'terminal', label: 'Console', icon: TerminalIcon },
+    // ADDED: Dedicated Tools Trigger
+    { id: 'tools', label: 'Tools', icon: Sparkles, isAction: true }, 
   ];
 
   return (
@@ -52,15 +54,25 @@ const WorkspaceTabs = ({ activeView, setActiveView, triggerHaptic }) => {
         return (
           <button
             key={tab.id}
-            onClick={() => { setActiveView(tab.id); triggerHaptic?.(); }}
+            onClick={() => { 
+                triggerHaptic?.();
+                if (tab.isAction) {
+                    onOpenTools();
+                } else {
+                    setActiveView(tab.id);
+                }
+            }}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all
-              ${isActive 
+              flex items-center justify-center gap-2 px-3 h-7 rounded-md text-[11px] font-medium transition-all
+              ${isActive && !tab.isAction
                 ? 'bg-zinc-800 text-zinc-100 shadow-sm' 
-                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}
+                : tab.isAction 
+                    ? 'text-pink-500 hover:bg-pink-500/10' 
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'
+              }
             `}
           >
-            <tab.icon className={`w-3.5 h-3.5 ${isActive ? 'text-pink-500' : 'text-zinc-600'}`} />
+            <tab.icon className={`w-3.5 h-3.5 ${isActive || tab.isAction ? 'text-pink-500' : 'text-zinc-600'}`} />
             {tab.label}
           </button>
         );
@@ -72,7 +84,6 @@ const WorkspaceTabs = ({ activeView, setActiveView, triggerHaptic }) => {
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
 
-  // --- INITIAL VFS STATE ---
   const [projectFiles, setProjectFiles] = useState(project?.files || [
     { 
       name: "MainActivity.kt", 
@@ -103,7 +114,6 @@ export default function WorkspaceUI({ project }) {
     const saveTimer = setTimeout(async () => {
       setSaveStatus('saving');
       try {
-        // Simulated Save Call
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
       } catch (err) { setSaveStatus('error'); }
@@ -111,13 +121,11 @@ export default function WorkspaceUI({ project }) {
     return () => clearTimeout(saveTimer);
   }, [projectFiles, project?._id]);
 
-  // --- CORE UTILITIES ---
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
   const updateFile = useCallback((filesOrName, content) => {
-    // Helper: Normalize to array
     const updates = Array.isArray(filesOrName) 
       ? filesOrName 
       : [{ name: filesOrName, content: content }];
@@ -145,7 +153,7 @@ export default function WorkspaceUI({ project }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-screen bg-black text-zinc-300 fixed inset-0 overflow-hidden font-sans">
+    <div className="flex flex-col w-full h-[100dvh] bg-black text-zinc-300 fixed inset-0 overflow-hidden font-sans">
       
       {/* 1. GLOBAL HEADER */}
       <Header 
@@ -158,17 +166,17 @@ export default function WorkspaceUI({ project }) {
         triggerHaptic={triggerHaptic}
       />
 
-      {/* 2. WORKSPACE TABS (Replaces Sidebar) */}
+      {/* 2. WORKSPACE TABS */}
       <WorkspaceTabs 
         activeView={activeView} 
         setActiveView={setActiveView} 
+        onOpenTools={() => setIsOrbOpen(true)}
         triggerHaptic={triggerHaptic} 
       />
 
       {/* 3. MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 bg-black relative overflow-hidden">
         
-        {/* VIEW SWITCHER */}
         {activeView === 'chat' && (
           <ChatInterface 
             projectFiles={projectFiles} 
@@ -198,10 +206,17 @@ export default function WorkspaceUI({ project }) {
           />
         )}
         
-        {/* Utility Views */}
         {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
         {activeView === 'settings' && <SettingsView project={project} />}
       </div>
+
+      {/* --- VISIONARY TOOLS MENU (ADDED BACK) --- */}
+      <ActionOrbMenu 
+        isOpen={isOrbOpen} 
+        onClose={() => setIsOrbOpen(false)} 
+        onTriggerTool={handleTriggerTool} 
+        triggerHaptic={triggerHaptic} 
+      />
 
       {/* --- ACTIVE TOOL OVERLAYS --- */}
       {activeTool === 'asset-alchemist' && <AssetAlchemist isOpen={true} onClose={() => setActiveTool(null)} onUpdateFile={updateFile} />}
