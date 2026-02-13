@@ -2,17 +2,16 @@
 
 import { useState, useRef, useEffect } from "react";
 import { 
-  ArrowUp, Bot, User, Cpu, FileCode, CheckCircle2, 
-  Loader2, ChevronDown, ChevronRight, Zap, Sparkles, AlertTriangle, 
-  Search, Code, Layout
+  ArrowUp, Bot, FileCode, CheckCircle2, 
+  Loader2, ChevronDown, ChevronRight, Sparkles, AlertTriangle 
 } from "lucide-react";
 
-// --- THE "GHOST" THOUGHT MODULE (Detailed Execution Log) ---
-const NeuralThought = ({ steps, isComplete }) => {
+// --- HONEST "THINKING" MODULE ---
+const NeuralThought = ({ isComplete, duration }) => {
   const [isExpanded, setIsExpanded] = useState(!isComplete);
   const [elapsed, setElapsed] = useState(0);
-  const scrollRef = useRef(null);
 
+  // Real-time timer
   useEffect(() => {
     if (isComplete) return;
     const startTime = Date.now();
@@ -21,13 +20,6 @@ const NeuralThought = ({ steps, isComplete }) => {
     }, 100);
     return () => clearInterval(timer);
   }, [isComplete]);
-
-  // Auto-scroll the log as new steps arrive
-  useEffect(() => {
-    if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [steps]);
 
   return (
     <div className="my-3 w-full max-w-xl border border-zinc-800 rounded-lg bg-[#0a0a0a] overflow-hidden transition-all duration-300">
@@ -42,22 +34,21 @@ const NeuralThought = ({ steps, isComplete }) => {
                     <Loader2 className="w-4 h-4 text-zinc-500 animate-spin" />
                 )}
                 <span className="text-xs font-mono text-zinc-400">
-                    {isComplete ? `Completed in ${elapsed}s` : `Visionary Engine Active... ${elapsed}s`}
+                    {isComplete ? `Processed in ${duration || elapsed}s` : `Visionary Engine Working... ${elapsed}s`}
                 </span>
             </div>
             {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-zinc-600" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />}
         </button>
 
-        {isExpanded && (
-            <div ref={scrollRef} className="px-4 py-3 space-y-2 border-t border-zinc-800/50 bg-black/40 max-h-40 overflow-y-auto custom-scrollbar">
-                {steps.map((step, i) => (
-                    <div key={i} className="flex items-center gap-3 animate-in slide-in-from-left-2 fade-in duration-300">
-                        <step.icon className={`w-3.5 h-3.5 shrink-0 ${i === steps.length - 1 && !isComplete ? 'text-pink-500 animate-pulse' : 'text-zinc-600'}`} />
-                        <span className={`text-[11px] font-mono leading-tight truncate ${i === steps.length - 1 && !isComplete ? 'text-zinc-200' : 'text-zinc-500'}`}>
-                            {step.text}
-                        </span>
-                    </div>
-                ))}
+        {/* Only show real system status here, no fake logs */}
+        {isExpanded && !isComplete && (
+            <div className="px-4 py-3 border-t border-zinc-800/50 bg-black/40">
+                <div className="flex items-center gap-3 animate-pulse">
+                    <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                    <span className="text-[11px] font-mono text-zinc-300">
+                        Generating Architecture & Code...
+                    </span>
+                </div>
             </div>
         )}
     </div>
@@ -101,50 +92,15 @@ export default function ChatInterface({
 }) {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [currentThoughtSteps, setCurrentThoughtSteps] = useState([]);
-  
   const scrollRef = useRef(null);
   const abortControllerRef = useRef(null);
 
+  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
         scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
-  }, [messages, currentThoughtSteps, isTyping]);
-
-  // --- 3. DYNAMIC WORKFLOW SIMULATOR ---
-  const simulateThinkingProcess = (inputText) => {
-    // 1. Initial State
-    setCurrentThoughtSteps([{ text: "Initializing context...", icon: Cpu }]);
-
-    // 2. Queue simulated steps based on input context
-    const steps = [
-        { text: "Reading project configuration...", icon: Search, delay: 600 },
-        { text: `Analyzing request: "${inputText.slice(0, 20)}..."`, icon: Bot, delay: 1200 },
-    ];
-
-    // Context-aware simulations
-    if (inputText.toLowerCase().includes("xml") || inputText.toLowerCase().includes("layout")) {
-        steps.push({ text: "Scanning res/layout directories...", icon: Layout, delay: 2000 });
-        steps.push({ text: "Calculating view hierarchy...", icon: Code, delay: 2800 });
-    } else if (inputText.toLowerCase().includes("logic") || inputText.toLowerCase().includes("function")) {
-        steps.push({ text: "Parsing MainActivity.kt...", icon: FileCode, delay: 2000 });
-        steps.push({ text: "Checking import dependencies...", icon: Zap, delay: 2800 });
-    } else {
-        steps.push({ text: "Diffing current file state...", icon: FileCode, delay: 2000 });
-        steps.push({ text: "Synthesizing code update...", icon: Sparkles, delay: 2800 });
-    }
-
-    steps.push({ text: "Finalizing changes...", icon: CheckCircle2, delay: 3800 });
-
-    const timers = steps.map(s => 
-        setTimeout(() => {
-            setCurrentThoughtSteps(prev => [...prev, { text: s.text, icon: s.icon }]);
-        }, s.delay)
-    );
-    
-    return () => timers.forEach(t => clearTimeout(t));
-  };
+  }, [messages, isTyping]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isTyping) return;
@@ -162,16 +118,11 @@ export default function ChatInterface({
     const userMsg = { role: 'user', text: text };
     setMessages(prev => [...prev, userMsg]);
 
-    // 3. Start Narrative Log
-    const clearTimers = simulateThinkingProcess(text);
-
-    // 4. Safety Timeout (45s)
-    const timeoutId = setTimeout(() => {
-        if (abortControllerRef.current) abortControllerRef.current.abort();
-    }, 45000);
+    const startTime = Date.now();
 
     try {
-        const response = await fetch('/api/generate', {
+        // 3. Network Request with 45s Timeout
+        const fetchPromise = fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -181,52 +132,54 @@ export default function ChatInterface({
             signal: abortControllerRef.current.signal
         });
 
-        clearTimeout(timeoutId);
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Request timed out (45s limit)")), 45000)
+        );
 
-        if (!response.ok) throw new Error(`Server Error: ${response.status}`);
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
 
+        if (!response.ok) {
+            throw new Error(`Server Error: ${response.status} ${response.statusText}`);
+        }
+
+        // 4. Safe JSON Parsing
         let data;
         try {
             data = await response.json();
         } catch (e) {
-            throw new Error("Invalid JSON response");
+            throw new Error("Invalid JSON response from server");
         }
 
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        // 5. Success Message
         const aiMsg = { 
             role: 'ai', 
             text: data.message || "Update processed.",
             files: data.files || [],
-            // Pass the final "thought history" to the completed message
-            thoughts: [
-                { text: "Analyzed request context", icon: Bot },
-                { text: `Modified ${data.files?.length || 0} files`, icon: FileCode },
-                { text: "Verified syntax integrity", icon: CheckCircle2 }
-            ]
+            duration: duration // Pass actual duration
         };
 
         setMessages(prev => [...prev, aiMsg]);
 
+        // 6. Real Feature Connection
         if (data.files && Array.isArray(data.files)) {
-            data.files.forEach(file => {
-                 onExecute('UPDATE_FILE', { 
-                    name: file.name, 
-                    content: file.content 
-                 });
-            });
+            // This triggers the ACTUAL file update in WorkspaceUI
+            onExecute(data.files.map(f => ({ name: f.name, content: f.content })));
+            
+            // Force Live Preview
             if (setPreviewMode) setPreviewMode('live'); 
         }
 
     } catch (error) {
         console.error("AI Error:", error);
         let errorText = error.name === 'AbortError' 
-            ? "⚠️ Request timed out. Taking too long." 
+            ? "⚠️ Request timed out. The server took too long." 
             : `⚠️ Error: ${error.message}`;
             
         setMessages(prev => [...prev, { role: 'ai', text: errorText }]);
     } finally {
-        clearTimers && clearTimers();
         setIsTyping(false);
-        setCurrentThoughtSteps([]);
         triggerHaptic?.();
     }
   };
@@ -239,7 +192,6 @@ export default function ChatInterface({
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 pb-32 space-y-8 custom-scrollbar relative"
       >
-         {/* Grid Background */}
          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
          {messages.length === 0 && (
@@ -264,8 +216,8 @@ export default function ChatInterface({
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                                {/* Completed Thoughts */}
-                                {msg.thoughts && <NeuralThought steps={msg.thoughts} isComplete={true} />}
+                                {/* Completed "Thought" (Execution Timer) */}
+                                {msg.duration && <NeuralThought isComplete={true} duration={msg.duration} />}
                                 
                                 <div className={`text-[13px] leading-relaxed mt-2 whitespace-pre-wrap ${msg.text.includes("Error") ? 'text-red-400' : 'text-zinc-300'}`}>
                                     {msg.text}
@@ -279,16 +231,15 @@ export default function ChatInterface({
             </div>
          ))}
 
-         {/* ACTIVE THOUGHT LOG (a0.dev Style) */}
+         {/* ACTIVE PROCESSING STATE */}
          {isTyping && (
              <div className="w-full max-w-2xl animate-in fade-in duration-300">
                 <div className="flex gap-4">
                     <div className="mt-1 w-6 h-6 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 animate-pulse">
-                        <Cpu className="w-3 h-3 text-zinc-500" />
+                        <ArrowUp className="w-3 h-3 text-zinc-500 animate-bounce" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        {/* Live Log */}
-                        <NeuralThought steps={currentThoughtSteps} isComplete={false} />
+                        <NeuralThought isComplete={false} />
                     </div>
                 </div>
              </div>
