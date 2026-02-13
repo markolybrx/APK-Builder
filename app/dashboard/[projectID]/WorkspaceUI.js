@@ -48,7 +48,7 @@ const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }
   ];
 
   return (
-    <div className="h-10 border-b border-zinc-900 bg-black flex items-center px-4 gap-1 shrink-0 z-40 select-none">
+    <div className="h-10 border-b border-zinc-900 bg-black flex items-center px-4 gap-2 shrink-0 z-40 select-none">
       {tabs.map((tab) => {
         const isActive = activeView === tab.id;
         return (
@@ -62,13 +62,13 @@ const WorkspaceTabs = ({ activeView, setActiveView, onOpenTools, triggerHaptic }
                     setActiveView(tab.id);
                 }
             }}
-            // UPDATED: Removed leading-none/fixed height. Using padding for natural centering.
+            // UPDATED: Proper Flexbox centering
             className={`
               flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all
               ${isActive && !tab.isAction
                 ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/50' 
                 : tab.isAction 
-                    ? 'text-pink-500 hover:bg-pink-500/10 border border-transparent hover:border-pink-500/20' 
+                    ? 'text-pink-500 hover:bg-pink-500/10 border border-transparent' 
                     : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50 border border-transparent'
               }
             `}
@@ -123,12 +123,12 @@ export default function WorkspaceUI({ project }) {
     return () => clearTimeout(saveTimer);
   }, [projectFiles, project?._id]);
 
-  // --- UTILITIES ---
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
   const updateFile = useCallback((filesOrName, content) => {
+    // Helper: Normalize to array
     const updates = Array.isArray(filesOrName) 
       ? filesOrName 
       : [{ name: filesOrName, content: content }];
@@ -173,7 +173,7 @@ export default function WorkspaceUI({ project }) {
       <WorkspaceTabs 
         activeView={activeView} 
         setActiveView={setActiveView} 
-        onOpenTools={() => setIsOrbOpen(true)} 
+        onOpenTools={() => setIsOrbOpen(true)} // Opens Visionary Hub
         triggerHaptic={triggerHaptic} 
       />
 
