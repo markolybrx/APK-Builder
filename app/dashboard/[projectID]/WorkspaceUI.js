@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { User, X, LogOut } from "lucide-react"; 
+import { 
+  MessageSquare, Code2, Smartphone, GitBranch, 
+  Settings, Terminal as TerminalIcon
+} from "lucide-react"; 
 
 // --- 1. CORE CLUSTER ---
-import NavigationRail from "./components/core/NavigationRail";
 import ChatInterface from "./components/core/ChatInterface";
 import FileExplorer from "./components/core/FileExplorer";
 import PreviewPane from "./components/core/PreviewPane";
@@ -32,7 +34,40 @@ import HistoryView from "./components/shared/HistoryView";
 import SettingsView from "./components/shared/SettingsView";
 import DebuggerView from "./components/shared/DebuggerView"; 
 import QRShareModal from "./components/shared/QRShareModal";
-import WelcomeTour from "./components/shared/WelcomeTour";
+
+// --- NEW COMPONENT: TOP TAB NAVIGATION ---
+const WorkspaceTabs = ({ activeView, setActiveView, triggerHaptic }) => {
+  const tabs = [
+    { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'files', label: 'Code', icon: Code2 },
+    { id: 'preview', label: 'Preview', icon: Smartphone },
+    { id: 'logic', label: 'Logic', icon: GitBranch },
+    { id: 'terminal', label: 'Console', icon: TerminalIcon },
+  ];
+
+  return (
+    <div className="h-10 border-b border-zinc-900 bg-black flex items-center px-4 gap-1 shrink-0 z-40 select-none">
+      {tabs.map((tab) => {
+        const isActive = activeView === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveView(tab.id); triggerHaptic?.(); }}
+            className={`
+              flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all
+              ${isActive 
+                ? 'bg-zinc-800 text-zinc-100 shadow-sm' 
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}
+            `}
+          >
+            <tab.icon className={`w-3.5 h-3.5 ${isActive ? 'text-pink-500' : 'text-zinc-600'}`} />
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 export default function WorkspaceUI({ project }) {
   const router = useRouter();
@@ -58,14 +93,9 @@ export default function WorkspaceUI({ project }) {
   // --- MODAL & HUB STATES ---
   const [isOrbOpen, setIsOrbOpen] = useState(false); 
   const [activeTool, setActiveTool] = useState(null); 
-  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [isConverterOpen, setIsConverterOpen] = useState(false);
-
-  const [messages, setMessages] = useState([
-    { role: 'ai', text: `Neural Link Active. Workspace synchronized for "${project?.name || 'New Project'}".` },
-  ]);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // --- AUTO-SAVE SYSTEM ---
   useEffect(() => {
@@ -73,15 +103,9 @@ export default function WorkspaceUI({ project }) {
     const saveTimer = setTimeout(async () => {
       setSaveStatus('saving');
       try {
-        const res = await fetch('/api/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId: project._id, files: projectFiles })
-        });
-        if (res.ok) {
-            setSaveStatus('saved');
-            setTimeout(() => setSaveStatus('idle'), 2000);
-        } else { setSaveStatus('error'); }
+        // Simulated Save Call
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
       } catch (err) { setSaveStatus('error'); }
     }, 2000);
     return () => clearTimeout(saveTimer);
@@ -92,13 +116,24 @@ export default function WorkspaceUI({ project }) {
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(50);
   };
 
-  const updateFile = useCallback((fileName, newContent) => {
-    if (!fileName) return;
+  const updateFile = useCallback((filesOrName, content) => {
+    // Helper: Normalize to array
+    const updates = Array.isArray(filesOrName) 
+      ? filesOrName 
+      : [{ name: filesOrName, content: content }];
+
     setProjectFiles(prev => {
-      const exists = prev.find(f => f.name === fileName);
-      if (exists) return prev.map(file => file.name === fileName ? { ...file, content: newContent } : file);
-      const defaultPath = fileName.endsWith('.xml') ? "app/src/main/res/layout/" : "app/src/main/java/";
-      return [...prev, { name: fileName, content: newContent, path: defaultPath }];
+      let newFiles = [...prev];
+      updates.forEach(update => {
+        const index = newFiles.findIndex(f => f.name === update.name);
+        if (index >= 0) {
+          newFiles[index] = { ...newFiles[index], content: update.content };
+        } else {
+          const defaultPath = update.name.endsWith('.xml') ? "app/src/main/res/layout/" : "app/src/main/java/";
+          newFiles.push({ name: update.name, content: update.content, path: defaultPath });
+        }
+      });
+      return newFiles;
     });
     triggerHaptic();
   }, []);
@@ -109,52 +144,66 @@ export default function WorkspaceUI({ project }) {
     triggerHaptic();
   };
 
-  const executeAICommand = async (commandType, payload) => {
-    triggerHaptic();
-    switch(commandType) {
-      case 'UPDATE_FILE': updateFile(payload.name, payload.content); break;
-      case 'OPEN_TOOL': setActiveTool(payload.toolId); break; 
-      case 'CREATE_PAGE':
-        const newFileName = payload.name.includes('.') ? payload.name : `${payload.name}Activity.kt`;
-        updateFile(newFileName, payload.content);
-        break;
-    }
-  };
-
   return (
-    <div className="flex flex-col w-full bg-black text-zinc-300 fixed inset-0 selection:bg-pink-500/30" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+    <div className="flex flex-col w-full h-screen bg-black text-zinc-300 fixed inset-0 overflow-hidden font-sans">
+      
+      {/* 1. GLOBAL HEADER */}
       <Header 
         project={project}
         saveStatus={saveStatus} 
         onShareClick={() => setIsQRModalOpen(true)}
         onProfileClick={() => setIsProfileOpen(true)}
+        onImportClick={() => setIsConverterOpen(true)}
+        onCloneClick={() => setActiveTool('clone-vision')}
+        triggerHaptic={triggerHaptic}
       />
 
-      <div className="flex flex-1 overflow-hidden relative">
-        <NavigationRail 
-            activeView={activeView} 
-            setActiveView={setActiveView} 
-            onOpenOrb={() => setIsOrbOpen(true)} 
-            onExit={() => setIsExitModalOpen(true)}
-            triggerHaptic={triggerHaptic}
-        />
+      {/* 2. WORKSPACE TABS (Replaces Sidebar) */}
+      <WorkspaceTabs 
+        activeView={activeView} 
+        setActiveView={setActiveView} 
+        triggerHaptic={triggerHaptic} 
+      />
 
-        <main className="flex-1 flex flex-col min-w-0 bg-black relative overflow-hidden border-l border-zinc-800">
-          {activeView === 'chat' && <ChatInterface messages={messages} setMessages={setMessages} projectFiles={projectFiles} onExecute={executeAICommand} />}
-          {activeView === 'logic' && <LogicMapView projectFiles={projectFiles} triggerHaptic={triggerHaptic} />}
-          {activeView === 'files' && <FileExplorer files={projectFiles} />}
-          {activeView === 'terminal' && <Terminal project={project} />}
-          {activeView === 'preview' && <PreviewPane projectFiles={projectFiles} previewMode={previewMode} setPreviewMode={setPreviewMode} />}
-          {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
-          {activeView === 'settings' && <SettingsView project={project} />}
-          {activeView === 'debug' && <DebuggerView files={projectFiles} onUpdateFile={updateFile} />}
-        </main>
+      {/* 3. MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col min-w-0 bg-black relative overflow-hidden">
+        
+        {/* VIEW SWITCHER */}
+        {activeView === 'chat' && (
+          <ChatInterface 
+            projectFiles={projectFiles} 
+            onUpdateFiles={updateFile} 
+            triggerHaptic={triggerHaptic} 
+          />
+        )}
+        
+        {activeView === 'logic' && (
+          <LogicMapView projectFiles={projectFiles} triggerHaptic={triggerHaptic} />
+        )}
+        
+        {activeView === 'files' && (
+          <FileExplorer files={projectFiles} />
+        )}
+        
+        {activeView === 'terminal' && (
+          <Terminal project={project} />
+        )}
+        
+        {activeView === 'preview' && (
+          <PreviewPane 
+            projectFiles={projectFiles} 
+            previewMode={previewMode} 
+            setPreviewMode={setPreviewMode} 
+            triggerHaptic={triggerHaptic}
+          />
+        )}
+        
+        {/* Utility Views */}
+        {activeView === 'history' && <HistoryView triggerHaptic={triggerHaptic} />}
+        {activeView === 'settings' && <SettingsView project={project} />}
       </div>
 
-      {/* --- OVERLAYS --- */}
-      <ActionOrbMenu isOpen={isOrbOpen} onClose={() => setIsOrbOpen(false)} onTriggerTool={handleTriggerTool} triggerHaptic={triggerHaptic} />
-
-      {/* Dynamic Tool Rendering */}
+      {/* --- ACTIVE TOOL OVERLAYS --- */}
       {activeTool === 'asset-alchemist' && <AssetAlchemist isOpen={true} onClose={() => setActiveTool(null)} onUpdateFile={updateFile} />}
       {activeTool === 'clone-vision' && <CloneVision isOpen={true} onClose={() => setActiveTool(null)} />}
       {activeTool === 'behavior-recorder' && <BehaviorRecorder isOpen={true} onClose={() => setActiveTool(null)} onUpdateFile={updateFile} />}
@@ -162,8 +211,10 @@ export default function WorkspaceUI({ project }) {
       {activeTool === 'design-critique' && <DesignCritique isOpen={true} onClose={() => setActiveTool(null)} projectFiles={projectFiles} onUpdateFile={updateFile} />}
       {activeTool === 'sensor-bridge' && <SensorBridge isOpen={true} onClose={() => setActiveTool(null)} onUpdateFile={updateFile} />}
 
+      {/* --- UTILITY MODALS --- */}
       <QRShareModal isOpen={isQRModalOpen} onClose={() => setIsQRModalOpen(false)} />
       <RepoConverter isOpen={isConverterOpen} onClose={() => setIsConverterOpen(false)} onUpdateFile={updateFile} />
+
     </div>
   );
 }
