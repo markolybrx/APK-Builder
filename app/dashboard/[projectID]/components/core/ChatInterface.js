@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { 
   ArrowUp, Bot, User, Cpu, FileCode, CheckCircle2, 
-  Loader2, ChevronDown, ChevronRight, Zap, Sparkles, AlertCircle
+  Loader2, ChevronDown, ChevronRight, Zap, Sparkles 
 } from "lucide-react";
 
 // --- THE "GHOST" THOUGHT MODULE ---
@@ -102,7 +102,7 @@ export default function ChatInterface({
   const [currentThoughtSteps, setCurrentThoughtSteps] = useState([]);
   
   const scrollRef = useRef(null);
-  const abortControllerRef = useRef(null); // Reference for aborting requests
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -195,7 +195,6 @@ export default function ChatInterface({
 
         setMessages(prev => [...prev, { role: 'ai', text: errorMessage }]);
     } finally {
-        // ALWAYS Reset Typing State
         setIsTyping(false);
         setCurrentThoughtSteps([]);
         triggerHaptic?.();
@@ -203,7 +202,7 @@ export default function ChatInterface({
   };
 
   return (
-    // Changed h-full to h-[100dvh] for mobile viewport stability
+    // UPDATED: h-[100dvh] for mobile viewport safety
     <div className="h-[100dvh] w-full bg-black relative overflow-hidden font-sans flex flex-col">
       
       {/* MESSAGE STREAM */}
@@ -211,6 +210,7 @@ export default function ChatInterface({
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-4 pb-32 space-y-8 custom-scrollbar relative"
       >
+         {/* Grid Background */}
          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
          {messages.length === 0 && (
@@ -264,8 +264,8 @@ export default function ChatInterface({
       </div>
 
       {/* FLOATING INPUT ISLAND */}
-      {/* Positioned absolutely at bottom-6 with z-50 to ensure floating behavior */}
-      <div className="absolute bottom-6 left-0 right-0 px-4 z-50 flex justify-center pointer-events-none mb-safe">
+      {/* UPDATED: 'fixed' positioning ensures it stays pinned to the screen bottom regardless of container scroll */}
+      <div className="fixed bottom-6 left-0 right-0 px-4 z-50 flex justify-center pointer-events-none mb-safe">
          <div className="w-full max-w-2xl pointer-events-auto relative group">
             
             <div className="absolute -inset-0.5 bg-gradient-to-r from-zinc-700 to-zinc-600 rounded-[2rem] blur opacity-0 group-focus-within:opacity-20 transition duration-500" />
