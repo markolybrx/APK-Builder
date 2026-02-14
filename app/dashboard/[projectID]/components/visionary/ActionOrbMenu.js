@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { 
-  X, Sparkles, Wand2, ScanLine, Layers, Activity, 
-  MousePointerClick, ScanEye, Code2, GitBranch, 
-  Globe, Rocket, Bug, Cpu, Palette, Zap
+  X, Sparkles, Wand2, ScanLine, Activity, 
+  MousePointerClick, ScanEye, Code2, Palette, Bug
 } from "lucide-react";
 
 export default function ActionOrbMenu({ isOpen, onClose, onTriggerTool, triggerHaptic }) {
@@ -12,37 +11,57 @@ export default function ActionOrbMenu({ isOpen, onClose, onTriggerTool, triggerH
 
   if (!isOpen) return null;
 
-  // --- 1. TOOL CATEGORIZATION ---
+  // --- 1. TOOL CATEGORIZATION (Only Active Categories) ---
   const categories = [
     { id: "design", label: "Design", icon: Palette },
     { id: "logic", label: "Logic", icon: Code2 },
     { id: "audit", label: "Audit", icon: Bug },
-    { id: "ship", label: "Ship", icon: Rocket },
   ];
 
-  // --- 2. THE VISIONARY TOOLSET ---
+  // --- 2. THE VISIONARY TOOLSET (Only Active Tools) ---
+  // These IDs must match the checks in WorkspaceUI.js
   const tools = {
     design: [
-      { id: "asset-alchemist", label: "Asset Alchemist", icon: Sparkles, desc: "Gen-AI Drawables" },
-      { id: "clone-vision", label: "Clone Vision", icon: ScanLine, desc: "UI Reconstruction" },
-      { id: "pixel-foundry", label: "Pixel Foundry", icon: Layers, desc: "Sprite Generator" },
-      { id: "shader-forge", label: "Shader Forge", icon: Zap, desc: "VFX Graph" },
+      { 
+        id: "asset-alchemist", 
+        label: "Asset Alchemist", 
+        icon: Sparkles, 
+        desc: "Generate Vector Drawables" 
+      },
+      { 
+        id: "clone-vision", 
+        label: "Clone Vision", 
+        icon: ScanLine, 
+        desc: "UI Reconstruction Engine" 
+      },
     ],
     logic: [
-      { id: "behavior-recorder", label: "Behavior Bot", icon: MousePointerClick, desc: "Gesture-to-Code" },
-      { id: "api-weaver", label: "API Weaver", icon: GitBranch, desc: "Data Binding" },
-      { id: "sensor-bridge", label: "Sensor Bridge", icon: Activity, desc: "Hardware Link" },
-      { id: "kinetic-sandbox", label: "Kinetic Box", icon: Cpu, desc: "Physics Engine" },
+      { 
+        id: "behavior-recorder", 
+        label: "Behavior Bot", 
+        icon: MousePointerClick, 
+        desc: "Record Gesture-to-Code" 
+      },
+      { 
+        id: "sensor-bridge", 
+        label: "Sensor Bridge", 
+        icon: Activity, 
+        desc: "Device Hardware Link" 
+      },
     ],
     audit: [
-      { id: "design-critique", label: "Critique", icon: Wand2, desc: "UI/UX Audit" },
-      { id: "contextual-lens", label: "Context Lens", icon: ScanEye, desc: "Code HUD" },
-      { id: "profiler-x", label: "Profiler X", icon: Activity, desc: "Perf. Monitor" },
-    ],
-    ship: [
-      { id: "lingua-link", label: "Lingua Link", icon: Globe, desc: "Auto-Localize" },
-      { id: "launchpad", label: "Launchpad", icon: Rocket, desc: "Store Listing" },
-      { id: "gradle-guru", label: "Gradle Guru", icon: Bug, desc: "Build Repair" },
+      { 
+        id: "design-critique", 
+        label: "Design Critique", 
+        icon: Wand2, 
+        desc: "Heuristic Evaluation" 
+      },
+      { 
+        id: "contextual-lens", 
+        label: "Context Lens", 
+        icon: ScanEye, 
+        desc: "X-Ray View Hierarchy" 
+      },
     ]
   };
 
@@ -65,7 +84,7 @@ export default function ActionOrbMenu({ isOpen, onClose, onTriggerTool, triggerH
         <div className="p-8 pb-4 flex items-center justify-between z-10">
             <div>
                 <h3 className="text-2xl font-bold text-white tracking-tight">Visionary Hub</h3>
-                <p className="text-xs text-zinc-500 font-mono mt-1">Select a Neural Module to initialize.</p>
+                <p className="text-xs text-zinc-500 font-mono mt-1">Select an active neural module.</p>
             </div>
             <button 
               onClick={onClose}
@@ -75,7 +94,7 @@ export default function ActionOrbMenu({ isOpen, onClose, onTriggerTool, triggerH
             </button>
         </div>
 
-        {/* CATEGORY TABS (Floating Pills) */}
+        {/* CATEGORY TABS */}
         <div className="px-8 pb-6 z-10">
             <div className="flex p-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl">
                 {categories.map((cat) => (
@@ -111,7 +130,7 @@ export default function ActionOrbMenu({ isOpen, onClose, onTriggerTool, triggerH
                             <Sparkles className="w-4 h-4 text-pink-500 animate-pulse" />
                         </div>
                     </div>
-                    
+
                     <span className="text-sm font-bold text-zinc-200 group-hover:text-white transition-colors">{tool.label}</span>
                     <span className="text-[10px] text-zinc-500 font-mono mt-1">{tool.desc}</span>
 
