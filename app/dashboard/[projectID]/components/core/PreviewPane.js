@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   Smartphone, Eye, Code2, ChevronDown, 
-  RotateCcw, Maximize2, Layers 
+  RotateCcw, Maximize2, Layers, RefreshCw 
 } from "lucide-react";
 
 export default function PreviewPane({ 
@@ -15,6 +15,7 @@ export default function PreviewPane({
   const [scale, setScale] = useState(1);
   const [selectedLayout, setSelectedLayout] = useState("activity_main.xml");
   const [rotation, setRotation] = useState(0);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // --- DATA RESOLUTION ---
   const layoutFiles = useMemo(() => 
@@ -26,6 +27,13 @@ export default function PreviewPane({
     const file = layoutFiles.find(f => f.name === selectedLayout) || layoutFiles[0];
     return file?.content || "";
   }, [layoutFiles, selectedLayout]);
+
+  // Visual flash on update
+  useEffect(() => {
+    setIsUpdating(true);
+    const t = setTimeout(() => setIsUpdating(false), 600);
+    return () => clearTimeout(t);
+  }, [activeContent]);
 
   // --- XML RENDERER ENGINE ---
   const renderXML = (xmlString) => {
@@ -187,6 +195,13 @@ export default function PreviewPane({
           {/* TITANIUM CHASSIS */}
           <div className="w-[320px] h-[650px] bg-[#1a1a1a] rounded-[3.5rem] p-3 shadow-2xl relative border border-zinc-800/50 ring-4 ring-black ring-opacity-50">
               
+              {/* HOT RELOAD FLASH */}
+              <div className={`absolute top-6 right-6 z-50 transition-opacity duration-300 ${isUpdating ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className="bg-green-500/20 text-green-400 border border-green-500/50 px-2 py-1 rounded-full text-[9px] font-bold flex items-center gap-1 backdrop-blur-md shadow-[0_0_10px_rgba(34,197,94,0.3)]">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> RELOADING
+                  </div>
+              </div>
+
               {/* Outer Glow */}
               <div className="absolute -inset-4 bg-gradient-to-tr from-pink-500/5 via-transparent to-blue-500/5 rounded-[4rem] blur-2xl opacity-50 pointer-events-none" />
 
